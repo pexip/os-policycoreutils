@@ -1,0 +1,51 @@
+Source: policycoreutils
+VCS-Git: git://git.debian.org/~srivasta/debian/policycoreutils.git
+VCS-Browser: http://git.debian.org/git/?p=users/srivasta/debian/policycoreutils.git
+Priority: optional
+Section: utils
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Russell Coker <russell@coker.com.au>
+Uploaders: Manoj Srivastava <srivasta@debian.org>
+Standards-Version: 3.8.4.0
+Build-Depends: libselinux1-dev (>= 2.1.0), libpam0g-dev,
+ libsepol1-dev (>= 2.1.0), file, gettext, libsemanage1-dev (>= 2.1.0),
+ python-sepolgen (>=1.1.0), libaudit-dev, libcap-ng-dev, libcap-dev,
+ libpcre3-dev
+XS-Python-Version: >= 2.5
+
+Package: policycoreutils
+Architecture: any
+Depends: ${shlibs:Depends}, lsb-base (>= 3.2-13), python (>= 2.5),
+  python-semanage, python-selinux, python-sepolgen (>=1.1.0), python-support,
+  psmisc
+Conflicts: mcstrans
+Provides: mcstrans
+Replaces: mcstrans
+Recommends: selinux-policy-default
+Suggests: selinux-policy-dev
+Description: SELinux core policy utilities
+ Security-enhanced Linux is a patch of the Linux® kernel and a number
+ of utilities with enhanced security functionality designed to add
+ mandatory access controls to Linux.  The Security-enhanced Linux
+ kernel contains new architectural components originally developed to
+ improve the security of the Flask operating system. These
+ architectural components provide general support for the enforcement
+ of many kinds of mandatory access control policies, including those
+ based on the concepts of Type Enforcement®, Role-based Access Control,
+ and Multi-level Security.
+ .
+ This package contains the core policy utilities that are required
+ for basic operation of an SELinux system.  These utilities include
+ load_policy to load policies, setfiles to label filesystems, newrole
+ to switch roles, run_init to run /etc/init.d scripts in the proper
+ context, and restorecond to restore contexts of files that often get the
+ wrong context.
+ .
+ It also includes the mcstransd to map a maching readable sensitivity label to
+ a human readable form.  The sensitivity label is comprised of a sensitivity
+ level (always s0 for MCS and anything from s0 to s15 for MLS) and a set of
+ categories.  A ranged sensitivity label will have a low level and a high level
+ where the high level will dominate the low level.  Categories are numbered
+ from c0 to c1023.  Names such as s0 and c1023 and not easily readable by
+ humans, so mcstransd translated them to human readable labels such as
+ SystemLow and SystemHigh.

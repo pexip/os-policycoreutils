@@ -2,7 +2,7 @@
 PREFIX ?= ${DESTDIR}/usr
 INCLUDEDIR ?= $(PREFIX)/include
 BINDIR ?= $(PREFIX)/bin
-LIBDIR ?= ${PREFIX}/lib
+LIBDIR ?= ${PREFIX}/lib/$(DEB_HOST_MULTIARCH)
 MANDIR ?= $(PREFIX)/share/man
 
 CFLAGS ?= -Werror -Wall -W

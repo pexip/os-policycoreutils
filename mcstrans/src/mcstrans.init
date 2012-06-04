@@ -1,4 +1,15 @@
 #!/bin/bash
+### BEGIN INIT INFO
+# Provides:          mcstransd
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: The daemon to make sensitivity labels human readable form
+# Description:       This daemon maps machine readable sensitivity labels
+#                    (numbered levels and categories) to a human readable form
+#                    (arbitrary names assigned by the sysadmin).
+### END INIT INFO
 #
 # mcstransd        This starts and stops mcstransd
 #
@@ -6,7 +17,6 @@
 # description: This starts the SELinux Context Translation System Daemon
 #
 # processname: /sbin/mcstransd
-# pidfile: /var/run/mcstransd.pid
 #
 # Return values according to LSB for all commands but status:
 # 0 - success
@@ -20,10 +30,12 @@
 
 PATH=/sbin:/bin:/usr/bin:/usr/sbin
 prog="mcstransd"
-lockfile=/var/lock/subsys/$prog
+lockfile=/var/lock/$prog
 
-# Source function library.
-. /etc/init.d/functions
+# Get lsb functions
+. /lib/lsb/init-functions
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
 
 # Allow anyone to run status
 if [ "$1" = "status" ] ; then
@@ -43,15 +55,14 @@ RETVAL=0
 start(){
 	test -x /sbin/mcstransd  || exit 5
 	echo -n $"Starting $prog: "
-	if status $prog > /dev/null; then
-		echo -n $"$prog: already running"
-		failure
-		echo
-		return 1
+
+	if ! [ -d /var/run/setrans ]; then
+		rm -rf /var/run/setrans
+		install -d -o root -g root /var/run/setrans
 	fi
 
 	unset HOME MAIL USER USERNAME
-	daemon $prog "$EXTRAOPTIONS"
+	start-stop-daemon --start --quiet --exec /sbin/mcstransd -- "$EXTRAOPTIONS"
 	RETVAL=$?
 	echo
 	if test $RETVAL = 0 ; then
@@ -62,7 +73,7 @@ start(){
 
 stop(){
 	echo -n $"Stopping $prog: "
-	killproc $prog
+	killall $prog
 	RETVAL=$?
 	echo
 	rm -f $lockfile

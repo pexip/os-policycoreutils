@@ -1,0 +1,4 @@
+policycoreutils: non-standard-toplevel-dir selinux/
+policycoreutils: package-contains-empty-directory selinux/
+policycoreutils: init.d-script-does-not-provide-itself /etc/init.d/policycoreutils
+policycoreutils: setuid-binary usr/sbin/seunshare 4755 root/root

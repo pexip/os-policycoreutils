@@ -13,10 +13,11 @@ ifeq "$(ARCH)" "i386"
 endif
 endif
 endif
+LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH)
 # Installation directories.
 PREFIX  ?= $(DESTDIR)/usr
 SBINDIR ?= $(DESTDIR)/sbin
-INITDIR ?= $(DESTDIR)/etc/rc.d/init.d
+INITDIR ?= $(DESTDIR)/etc/init.d
 
 PROG_SRC=mcstrans.c  mcscolor.c  mcstransd.c  mls_level.c
 PROG_OBJS= $(patsubst %.c,%.o,$(PROG_SRC))
