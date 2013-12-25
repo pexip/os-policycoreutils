@@ -3,15 +3,17 @@ VCS-Git: git://git.debian.org/~srivasta/debian/policycoreutils.git
 VCS-Browser: http://git.debian.org/git/?p=users/srivasta/debian/policycoreutils.git
 Priority: optional
 Section: utils
-Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Maintainer: Pexip AS <packaging@pexip.com>
+XSBC-Pexip-Original-Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Russell Coker <russell@coker.com.au>
-Uploaders: Manoj Srivastava <srivasta@debian.org>
+XSBC-Pexip-Original-Uploaders: Manoj Srivastava <srivasta@debian.org>
 Standards-Version: 3.8.4.0
 Build-Depends: libselinux1-dev (>= 2.1.0), libpam0g-dev,
  libsepol1-dev (>= 2.1.0), file, gettext, libsemanage1-dev (>= 2.1.0),
  python-sepolgen (>=1.1.0), libaudit-dev, libcap-ng-dev, libcap-dev,
  libpcre3-dev
 XS-Python-Version: >= 2.5
+XS-Pexip-Upstream: http://archive.ubuntu.com/ubuntu/ precise
 
 Package: policycoreutils
 Architecture: any
