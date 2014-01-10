@@ -1,3 +1,11 @@
+policycoreutils (2.1.0-3ubuntu1.1pexip2) pexip; urgency=low
+
+  * debian/policycoreutils.postinst: Do not remove /etc/init.d/selinux
+    when this package is configured. This init script is owned by the
+    selinux package (and removing it breaks dist-upgrade.
+
+ -- John-Mark Bell <jmb@pexip.com>  Fri, 10 Jan 2013 16:30:32 +0000
+
 policycoreutils (2.1.0-3ubuntu1.1pexip1) pexip; urgency=low
 
   * Prepare Pexip packaging

@@ -92,7 +92,7 @@ update-rc.d policycoreutils start 00 S 2 3 4 5 . stop 99 0 1 6 . >/dev/null
 update-rc.d mcstrans start 00 S 2 3 4 5 . stop 99 0 1 6 .  >/dev/null
 update-rc.d sandbox start 00 S 2 3 4 5 . stop 99 0 1 6 .  >/dev/null
 
-OLD_FILES='/etc/init.d/selinux /etc/rcS.d/S02selinux /etc/default/selinux /ss_policy'
+OLD_FILES='/etc/rcS.d/S02selinux /etc/default/selinux /ss_policy'
 OLD_FILES="$OLD_FILES /etc/mkinitrd/scripts/selinux  /etc/security/apt-get_context"
 OLD_FILES="$OLD_FILES /etc/security/default_context  /etc/security/dpkg_context"
 OLD_FILES="$OLD_FILES /etc/security/debian_context   /etc/security/dselect_context "
