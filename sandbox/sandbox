@@ -1,5 +1,6 @@
-#! /usr/bin/python -E
+#! /usr/bin/python -Es
 # Authors: Dan Walsh <dwalsh@redhat.com>
+# Authors: Thomas Liu <tliu@fedoraproject.org>
 # Authors: Josh Cogliati
 #
 # Copyright (C) 2009,2010  Red Hat
@@ -19,15 +20,17 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #
 
-import os, sys, socket, random, fcntl, shutil, re, subprocess
+import os, stat, sys, socket, random, fcntl, shutil, re, subprocess
 import selinux
 import signal
 from tempfile import mkdtemp
 import pwd
+import commands
+import sepolicy
 
 PROGNAME = "policycoreutils"
-HOMEDIR=pwd.getpwuid(os.getuid()).pw_dir
-
+SEUNSHARE = "/usr/sbin/seunshare"
+SANDBOXSH = "/usr/share/sandbox/sandboxX.sh"
 import gettext
 gettext.bindtextdomain(PROGNAME, "/usr/share/locale")
 gettext.textdomain(PROGNAME)
@@ -41,6 +44,7 @@ except IOError:
        import __builtin__
        __builtin__.__dict__['_'] = unicode
 
+DEFAULT_WINDOWSIZE = "1000x700"
 DEFAULT_TYPE = "sandbox_t"
 DEFAULT_X_TYPE = "sandbox_x_t"
 SAVE_FILES = {}
@@ -63,15 +67,15 @@ def error_exit(msg):
     sys.stderr.flush()
     sys.exit(1)
 
-def copyfile(file, dir, dest):
+def copyfile(file, srcdir, dest):
        import re
-       if file.startswith(dir):
+       if file.startswith(srcdir):
               dname = os.path.dirname(file)
               bname = os.path.basename(file)
-              if dname == dir:
+              if dname == srcdir:
                      dest = dest + "/" + bname
               else:
-                     newdir = re.sub(dir, dest, dname)
+                     newdir = re.sub(srcdir, dest, dname)
                      if not os.path.exists(newdir):
                             os.makedirs(newdir)
                      dest = newdir + "/" + bname
@@ -81,9 +85,10 @@ def copyfile(file, dir, dest):
                             shutil.copytree(file, dest)
                      else:
                             shutil.copy2(file, dest)
+
               except shutil.Error, elist:
-                     for e in elist:
-                            sys.stderr.write(e[1])
+                     for e in elist.message:
+                            sys.stderr.write(e[2])
                      
               SAVE_FILES[file] = (dest, os.path.getmtime(dest))
 
@@ -113,10 +118,30 @@ def reserve(level):
     sock.bind("\0%s" % level)
     fcntl.fcntl(sock.fileno(), fcntl.F_SETFD, fcntl.FD_CLOEXEC)
 
+def get_range():
+       try:
+              level =selinux.getcon_raw()[1].split(":")[4]
+              lowc,highc = level.split(".")
+              low = int(lowc[1:])
+              high = int(highc[1:])+1
+              if high - low == 0:
+                     raise IndexError
+
+              return low,high
+       except IndexError:
+              raise ValueError(_("User account must be setup with an MCS Range"))
+
 def gen_mcs():
-       while True:
-              i1 = random.randrange(0, 1024)
-              i2 = random.randrange(0, 1024)
+       low, high = get_range()
+
+       level = None
+       ctr = 0
+       total = high-low
+       total = (total * (total - 1))/2
+       while ctr < total:
+              ctr += 1
+              i1 = random.randrange(low, high)
+              i2 = random.randrange(low, high)
               if i1 == i2:
                      continue
               if i1 > i2:
@@ -129,7 +154,10 @@ def gen_mcs():
               except socket.error:
                      continue
               break
-       return level
+       if level:
+              return level
+       raise ValueError(_("Failed to find any unused category sets.  Consider a larger MCS range for this user."))
+
 
 def fullpath(cmd):
        for i in [ "/", "./", "../" ]:
@@ -142,7 +170,6 @@ def fullpath(cmd):
        return cmd
 
 class Sandbox:
-    VERSION = "sandbox .1"
     SYSLOG = "/var/log/messages"
 
     def __init__(self):
@@ -161,10 +188,10 @@ class Sandbox:
                   if not self.__options.homedir or not self.__options.tmpdir:
                          self.usage(_("Homedir and tempdir required for level mounts"))
 
-           if not os.path.exists("/usr/sbin/seunshare"):
+           if not os.path.exists(SEUNSHARE):
                   raise ValueError(_("""
-/usr/sbin/seunshare is required for the action you want to perform.  
-"""))
+%s is required for the action you want to perform.
+""") % SEUNSHARE)
 
     def __mount_callback(self, option, opt, value, parser):
            self.__mount = True
@@ -172,6 +199,15 @@ class Sandbox:
     def __x_callback(self, option, opt, value, parser):
            self.__mount = True
            setattr(parser.values, option.dest, True)
+           if not os.path.exists(SEUNSHARE):
+                  raise ValueError(_("""
+%s is required for the action you want to perform.
+""") % SEUNSHARE)
+
+           if not os.path.exists(SANDBOXSH):
+                  raise ValueError(_("""
+%s is required for the action you want to perform.
+""") % SANDBOXSH)
 
     def __validdir(self, option, opt, value, parser):
            if not os.path.isdir(value):
@@ -194,6 +230,8 @@ class Sandbox:
                          self.__include(option, opt, i[:-1], parser)
                   except IOError, e:
                          sys.stderr.write(str(e))
+                  except TypeError, e:
+                         sys.stderr.write(str(e))
            fd.close()
 
     def __copyfiles(self):
@@ -202,8 +240,9 @@ class Sandbox:
            for f in files:
                   copyfile(f, homedir, self.__homedir)
                   copyfile(f, "/tmp", self.__tmpdir)
+                  copyfile(f, "/var/tmp", self.__tmpdir)
 
-    def __setup_sandboxrc(self, wm = "/usr/bin/matchbox-window-manager -use_titlebar no"):
+    def __setup_sandboxrc(self, wm = "/usr/bin/openbox"):
            execfile =self.__homedir + "/.sandboxrc"
            fd = open(execfile, "w+") 
            if self.__options.session:
@@ -212,13 +251,15 @@ class Sandbox:
 /etc/gdm/Xsession
 """)
            else:
-                  command = " ".join(self.__paths)
+                  command = self.__paths[0] + " "
+                  for p in self.__paths[1:]:
+                         command += "'%s' " % p
                   fd.write("""#! /bin/sh
 #TITLE: %s
 /usr/bin/test -r ~/.xmodmap && /usr/bin/xmodmap ~/.xmodmap
 %s &
 WM_PID=$!
-%s
+dbus-launch --exit-with-session %s
 kill -TERM $WM_PID  2> /dev/null
 """ % (command, wm, command))
            fd.close()
@@ -229,13 +270,23 @@ kill -TERM $WM_PID  2> /dev/null
 
     def __parse_options(self):
         from optparse import OptionParser
-        usage = _("""
-sandbox [-h] [-[X|M] [-l level ] [-H homedir] [-T tempdir]] [-I includefile ] [-W windowmanager ] [[-i file ] ...] [ -t type ] command
+        types = ""
+        try:
+               types = _("""
+Policy defines the following types for use with the -t:
+\t%s
+""") % "\n\t".join(sepolicy.info(sepolicy.ATTRIBUTE, "sandbox_type")[0]['types'])
+        except RuntimeError:
+               pass
 
-sandbox [-h] [-[X|M] [-l level ] [-H homedir] [-T tempdir]] [-I includefile ] [-W windowmanager ] [[-i file ] ...] [ -t type ] -S
-""")
-        
-        parser = OptionParser(version=self.VERSION, usage=usage)
+        usage = _("""
+sandbox [-h] [-c] [-l level ] [-[X|M] [-H homedir] [-T tempdir]] [-I includefile ] [-W windowmanager ] [ -w windowsize ] [[-i file ] ...] [ -t type ] command
+
+sandbox [-h] [-c] [-l level ] [-[X|M] [-H homedir] [-T tempdir]] [-I includefile ] [-W windowmanager ] [ -w windowsize ] [[-i file ] ...] [ -t type ] -S
+%s
+""") % types
+
+        parser = OptionParser(usage=usage)
         parser.disable_interspersed_args()
         parser.add_option("-i", "--include", 
                           action="callback", callback=self.__include, 
@@ -250,8 +301,15 @@ sandbox [-h] [-[X|M] [-l level ] [-H homedir] [-T tempdir]] [-I includefile ] [-
                           action="callback", callback=self.__mount_callback, 
                           help=_("mount new home and/or tmp directory"))
 
+        parser.add_option("-d", "--dpi",
+                          dest="dpi", action="store",
+                          help=_("dots per inch for X display"))
+
         parser.add_option("-S", "--session", action="store_true",  dest="session", 
                           default=False,  help=_("run complete desktop session within sandbox"))
+
+        parser.add_option("-s", "--shred", action="store_true",  dest="shred", 
+                          default=False,  help=_("Shred content before tempory directories are removed"))
 
         parser.add_option("-X", dest="X_ind", 
                           action="callback", callback=self.__x_callback, 
@@ -260,21 +318,33 @@ sandbox [-h] [-[X|M] [-l level ] [-H homedir] [-T tempdir]] [-I includefile ] [-
         parser.add_option("-H", "--homedir", 
                           action="callback", callback=self.__validdir,
                           type="string",
-                          dest="homedir",  
+                          dest="homedir",
                           help=_("alternate home directory to use for mounting"))
 
-        parser.add_option("-T", "--tmpdir", dest="tmpdir",  
+        parser.add_option("-T", "--tmpdir", dest="tmpdir",
                           type="string",
                           action="callback", callback=self.__validdir,
                           help=_("alternate /tmp directory to use for mounting"))
 
+        parser.add_option("-w", "--windowsize", dest="windowsize",
+                          type="string", default=DEFAULT_WINDOWSIZE,
+                          help="size of the sandbox window")
+
         parser.add_option("-W", "--windowmanager", dest="wm",  
                           type="string",
-                          default="/usr/bin/matchbox-window-manager -use_titlebar no",
+                          default="/usr/bin/openbox",
                           help=_("alternate window manager"))
 
         parser.add_option("-l", "--level", dest="level", 
                           help=_("MCS/MLS level for the sandbox"))
+
+        parser.add_option("-c", "--cgroups",
+                          action="store_true", dest="usecgroup", default=False,
+                          help=_("Use cgroups to limit this sandbox."))
+
+        parser.add_option("-C", "--capabilities",
+                         action="store_true", dest="usecaps", default=False,
+                         help="Allow apps requiring capabilities to run within the sandbox.")
 
         self.__parser=parser
 
@@ -282,7 +352,12 @@ sandbox [-h] [-[X|M] [-l level ] [-H homedir] [-T tempdir]] [-I includefile ] [-
 
         if self.__options.X_ind:
                self.setype = DEFAULT_X_TYPE
-        
+        else:
+               try:
+                      sepolicy.info(sepolicy.TYPE, "sandbox_t")
+               except RuntimeError:
+                      raise ValueError(_("Sandbox Policy is not currently installed.\nYou need to install the selinux-policy-sandbox package in order to run this command"))
+               
         if self.__options.setype:
                self.setype = self.__options.setype
 
@@ -300,6 +375,10 @@ sandbox [-h] [-[X|M] [-l level ] [-H homedir] [-T tempdir]] [-I includefile ] [-
                self.__homedir = self.__options.homedir
                self.__tmpdir = self.__options.tmpdir
         else:
+               if self.__options.level:
+                      self.__homedir = self.__options.homedir
+                      self.__tmpdir = self.__options.tmpdir
+
                if len(cmds) == 0:
                       self.usage(_("Command required"))
                cmds[0] = fullpath(cmds[0])
@@ -323,50 +402,55 @@ sandbox [-h] [-[X|M] [-l level ] [-H homedir] [-T tempdir]] [-I includefile ] [-
 
            con = selinux.getcon()[1].split(":")
            self.__execcon = "%s:%s:%s:%s" % (con[0], con[1], self.setype, level)
-           self.__filecon = "%s:%s:%s:%s" % (con[0], "object_r", 
-                                             "%s_file_t" % self.setype[:-2], 
-                                             level)
+           self.__filecon = "%s:object_r:sandbox_file_t:%s" % (con[0], level)
     def __setup_dir(self):
            if self.__options.level or self.__options.session:
                   return
-           sandboxdir = HOMEDIR + "/.sandbox"
-           if not os.path.exists(sandboxdir):
-                  os.mkdir(sandboxdir)
 
            if self.__options.homedir:
                   selinux.chcon(self.__options.homedir, self.__filecon, recursive=True)
                   self.__homedir = self.__options.homedir
            else:
                   selinux.setfscreatecon(self.__filecon)
-                  self.__homedir = mkdtemp(dir=sandboxdir, prefix=".sandbox")
+                  self.__homedir = mkdtemp(dir="/tmp", prefix=".sandbox_home_")
 
            if self.__options.tmpdir:
                   selinux.chcon(self.__options.tmpdir, self.__filecon, recursive=True)
                   self.__tmpdir = self.__options.tmpdir
            else:
                   selinux.setfscreatecon(self.__filecon)
-                  self.__tmpdir = mkdtemp(dir="/tmp", prefix=".sandbox")
+                  self.__tmpdir = mkdtemp(dir="/tmp", prefix=".sandbox_tmp_")
            selinux.setfscreatecon(None)
            self.__copyfiles()
 
     def __execute(self):
            try:
-                  if self.__options.X_ind:
-                         xmodmapfile = self.__homedir + "/.xmodmap"
-                         xd = open(xmodmapfile,"w")
-                         subprocess.Popen(["/usr/bin/xmodmap","-pke"],stdout=xd).wait()
-                         xd.close()
-
-                         self.__setup_sandboxrc(self.__options.wm)
-                         
-                         cmds = [ '/usr/sbin/seunshare', "-t", self.__tmpdir, "-h", self.__homedir, "--", self.__execcon, "/usr/share/sandbox/sandboxX.sh" ]
-                         rc = subprocess.Popen(cmds).wait()
-                         return rc
-
+                  cmds = [ SEUNSHARE,  "-Z", self.__execcon ]
+                  if self.__options.usecgroup:
+                         cmds.append('-c')
+                  if self.__options.usecaps:
+                         cmds.append('-C')
                   if self.__mount:
-                         cmds =  [ '/usr/sbin/seunshare', "-t", self.__tmpdir, "-h", self.__homedir, "--", self.__execcon ] + self.__paths
-                         rc = subprocess.Popen(cmds).wait()
-                         return rc
+                         cmds +=  [ "-t", self.__tmpdir, "-h", self.__homedir ]
+
+                         if self.__options.X_ind:
+                                if self.__options.dpi:
+                                       dpi = self.__options.dpi
+                                else:
+                                       import gtk
+                                       dpi = str(gtk.settings_get_default().props.gtk_xft_dpi/1024)
+
+                                xmodmapfile = self.__homedir + "/.xmodmap"
+                                xd = open(xmodmapfile,"w")
+                                subprocess.Popen(["/usr/bin/xmodmap","-pke"],stdout=xd).wait()
+                                xd.close()
+
+                                self.__setup_sandboxrc(self.__options.wm)
+
+                                cmds += [ "--", SANDBOXSH, self.__options.windowsize, dpi ]
+                         else:
+                                cmds += [ "--" ] + self.__paths
+                         return subprocess.Popen(cmds).wait()
 
                   selinux.setexeccon(self.__execcon)
                   rc = subprocess.Popen(self.__cmds).wait()
@@ -382,9 +466,20 @@ sandbox [-h] [-[X|M] [-l level ] [-H homedir] [-T tempdir]] [-I includefile ] [-
                                 savefile(dest, i, self.__options.X_ind)
 
                   if self.__homedir and not self.__options.homedir: 
+                         if self.__options.shred:
+                                self.shred(self.__homedir)
                          shutil.rmtree(self.__homedir)
                   if self.__tmpdir and not self.__options.tmpdir:
+                         if self.__options.shred:
+                                self.shred(self.__homedir)
                          shutil.rmtree(self.__tmpdir)
+
+    def shred(self, path):
+        for root, dirs, files in os.walk(path):
+            for f in files:
+                dest = root + "/" + f
+                subprocess.Popen(["/usr/bin/shred",dest]).wait()
+
     def main(self):
         try:
                self.__parse_options()
@@ -404,7 +499,7 @@ if __name__ == '__main__':
            sandbox = Sandbox()
            rc = sandbox.main()
     except OSError, error:
-           error_exit(error.args[1])
+           error_exit(error)
     except ValueError, error:
            error_exit(error.args[0])
     except KeyError, error:
