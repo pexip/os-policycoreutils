@@ -20,7 +20,13 @@ set -e
 
 
 case "$1" in
-    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    ;;
+
+    remove)
+        if [ -L /usr/sbin/load_policy ]; then
+            rm /usr/sbin/load_policy
+        fi
     ;;
 
     purge)

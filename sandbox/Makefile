@@ -1,3 +1,5 @@
+PYTHON ?= python
+
 # Installation directories.
 PREFIX ?= $(DESTDIR)/usr
 SYSCONFDIR ?= $(DESTDIR)/etc/sysconfig
@@ -7,8 +9,8 @@ SBINDIR ?= $(PREFIX)/sbin
 MANDIR ?= $(PREFIX)/share/man
 LOCALEDIR ?= /usr/share/locale
 SHAREDIR ?= $(PREFIX)/share/sandbox
-override CFLAGS += $(LDFLAGS) -I$(PREFIX)/include -DPACKAGE="\"policycoreutils\"" -Wall -Werror -Wextra -W
-LDLIBS += -lcgroup -lselinux -lcap-ng -L$(LIBDIR)
+override CFLAGS += -I$(PREFIX)/include -DPACKAGE="\"policycoreutils\"" -Wall -Werror -Wextra -W
+LDLIBS += -lselinux -lcap-ng -L$(LIBDIR)
 SEUNSHARE_OBJS = seunshare.o
 
 all: sandbox seunshare sandboxX.sh start
@@ -32,7 +34,7 @@ install: all
 	install -m 644 sandbox.conf $(SYSCONFDIR)/sandbox
 
 test:
-	@python test_sandbox.py -v
+	@$(PYTHON) test_sandbox.py -v
 
 clean:
 	-rm -f seunshare *.o *~

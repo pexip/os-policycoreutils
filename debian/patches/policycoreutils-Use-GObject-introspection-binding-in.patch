@@ -1,0 +1,36 @@
+From 3d690c145112ce18720df2ca5e15e1c3920895ec Mon Sep 17 00:00:00 2001
+From: Laurent Bigonville <bigon@bigon.be>
+Date: Sat, 12 Nov 2016 03:38:55 +0100
+Subject: [PATCH] policycoreutils: Use GObject introspection binding instead of
+ python-gobject in selinux_server.py
+
+Signed-off-by: Laurent Bigonville <bigon@bigon.be>
+---
+ policycoreutils/sepolicy/selinux_server.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/policycoreutils/sepolicy/selinux_server.py b/policycoreutils/sepolicy/selinux_server.py
+index cdf4d16..8bd1fe5 100644
+--- a/sepolicy/selinux_server.py
++++ b/sepolicy/selinux_server.py
+@@ -3,7 +3,7 @@
+ import dbus
+ import dbus.service
+ import dbus.mainloop.glib
+-import gobject
++from gi.repository import GObject
+ import slip.dbus.service
+ from slip.dbus import polkit
+ import os
+@@ -128,7 +128,7 @@ class selinux_server(slip.dbus.service.Object):
+         raise ValueError("%s does not exist" % path)
+ 
+ if __name__ == "__main__":
+-    mainloop = gobject.MainLoop()
++    mainloop = GObject.MainLoop()
+     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+     system_bus = dbus.SystemBus()
+     name = dbus.service.BusName("org.selinux", system_bus)
+-- 
+2.10.2
+

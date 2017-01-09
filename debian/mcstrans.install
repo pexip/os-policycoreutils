@@ -1,0 +1,5 @@
+lib/systemd/system/mcstrans.service
+sbin/mcstransd
+usr/share/man/man8/mcs.8
+usr/share/man/man8/mcstransd.8
+usr/share/man/man8/setrans.conf.8

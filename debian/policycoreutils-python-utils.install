@@ -1,0 +1,14 @@
+usr/bin/audit2allow
+usr/bin/audit2why
+usr/bin/chcat
+usr/bin/sandbox
+usr/bin/semodule_package
+usr/lib/python*/*-packages/seobject.py
+usr/sbin/semanage
+usr/share/bash-completion/completions/semanage
+usr/share/man/man1/audit2allow.1
+usr/share/man/man1/audit2why.1
+usr/share/man/man8/chcat.8
+usr/share/man/man8/sandbox.8
+usr/share/man/man8/semanage*.8
+usr/share/man/man8/semodule_package.8

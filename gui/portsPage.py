@@ -23,30 +23,37 @@ import os
 import gobject
 import sys
 import seobject
-import commands
-from semanagePage import *;
+try:
+    from subprocess import getstatusoutput
+except ImportError:
+    from commands import getstatusoutput
+
+from semanagePage import *
 
 ##
 ## I18N
 ##
 PROGNAME = "policycoreutils"
-import gettext
-gettext.bindtextdomain(PROGNAME, "/usr/share/locale")
-gettext.textdomain(PROGNAME)
-TYPE_COL = 0
-PROTOCOL_COL = 1
-MLS_COL = 2
-PORT_COL = 3
 try:
+    import gettext
+    kwargs = {}
+    if sys.version_info < (3,):
+        kwargs['unicode'] = True
     gettext.install(PROGNAME,
                     localedir="/usr/share/locale",
-                    unicode=False,
-                    codeset = 'utf-8')
-except IOError:
-    import __builtin__
-    __builtin__.__dict__['_'] = unicode
+                    codeset='utf-8',
+                    **kwargs)
+except:
+    try:
+        import builtins
+        builtins.__dict__['_'] = str
+    except ImportError:
+        import __builtin__
+        __builtin__.__dict__['_'] = unicode
+
 
 class portsPage(semanagePage):
+
     def __init__(self, xml):
         semanagePage.__init__(self, xml, "ports", _("Network Port"))
         xml.signal_connect("on_group_clicked", self.on_group_clicked)
@@ -69,7 +76,7 @@ class portsPage(semanagePage):
         self.load()
 
     def filter_changed(self, *arg):
-        filter =  arg[0].get_text()
+        filter = arg[0].get_text()
         if filter != self.filter:
             if self.edit:
                 self.load(filter)
@@ -77,37 +84,37 @@ class portsPage(semanagePage):
                 self.group_load(filter)
 
     def init_store(self):
-        self.store = gtk.ListStore(gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING , gobject.TYPE_STRING)
+        self.store = gtk.ListStore(gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
         self.view.set_model(self.store)
         self.store.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
         self.view.set_search_equal_func(self.search)
-        col = gtk.TreeViewColumn(_("SELinux Port\nType"), gtk.CellRendererText(), text = TYPE_COL)
+        col = gtk.TreeViewColumn(_("SELinux Port\nType"), gtk.CellRendererText(), text=TYPE_COL)
         col.set_sort_column_id(TYPE_COL)
         col.set_resizable(True)
         self.view.append_column(col)
         self.store.set_sort_column_id(TYPE_COL, gtk.SORT_ASCENDING)
 
-        col = gtk.TreeViewColumn(_("Protocol"), gtk.CellRendererText(), text = PROTOCOL_COL)
+        col = gtk.TreeViewColumn(_("Protocol"), gtk.CellRendererText(), text=PROTOCOL_COL)
         col.set_sort_column_id(PROTOCOL_COL)
         col.set_resizable(True)
         self.view.append_column(col)
 
-        self.mls_col = gtk.TreeViewColumn(_("MLS/MCS\nLevel"), gtk.CellRendererText(), text = MLS_COL)
+        self.mls_col = gtk.TreeViewColumn(_("MLS/MCS\nLevel"), gtk.CellRendererText(), text=MLS_COL)
         self.mls_col.set_resizable(True)
         self.mls_col.set_sort_column_id(MLS_COL)
         self.view.append_column(self.mls_col)
 
-        col = gtk.TreeViewColumn(_("Port"), gtk.CellRendererText(), text = PORT_COL)
+        col = gtk.TreeViewColumn(_("Port"), gtk.CellRendererText(), text=PORT_COL)
         col.set_sort_column_id(PORT_COL)
         col.set_resizable(True)
         self.view.append_column(col)
-        self.store.set_sort_func(PORT_COL,self.sort_int, "")
+        self.store.set_sort_func(PORT_COL, self.sort_int, "")
 
     def sort_int(self, treemodel, iter1, iter2, user_data):
         try:
-            p1 = int(treemodel.get_value(iter1,PORT_COL).split('-')[0])
-            p2 = int(treemodel.get_value(iter2,PORT_COL).split('-')[0])
+            p1 = int(treemodel.get_value(iter1, PORT_COL).split('-')[0])
+            p2 = int(treemodel.get_value(iter2, PORT_COL).split('-')[0])
             if p1 > p2:
                 return 1
             if p1 == p2:
@@ -116,14 +123,12 @@ class portsPage(semanagePage):
         except:
             return 0
 
-    def load(self,filter = ""):
-        self.filter=filter
+    def load(self, filter=""):
+        self.filter = filter
         self.port = seobject.portRecords()
         dict = self.port.get_all(self.local)
-        keys = dict.keys()
-        keys.sort()
         self.store.clear()
-        for k in keys:
+        for k in sorted(dict.keys()):
             if not (self.match(str(k[0]), filter) or self.match(dict[k][0], filter) or self.match(k[2], filter) or self.match(dict[k][1], filter) or self.match(dict[k][1], filter)):
                 continue
             iter = self.store.append()
@@ -135,25 +140,23 @@ class portsPage(semanagePage):
             self.store.set_value(iter, TYPE_COL, dict[k][0])
             self.store.set_value(iter, PROTOCOL_COL, k[2])
             self.store.set_value(iter, MLS_COL, dict[k][1])
-        self.view.get_selection().select_path ((0,))
+        self.view.get_selection().select_path((0,))
 
-    def group_load(self, filter = ""):
-        self.filter=filter
+    def group_load(self, filter=""):
+        self.filter = filter
         self.port = seobject.portRecords()
         dict = self.port.get_all_by_type(self.local)
-        keys = dict.keys()
-        keys.sort()
         self.store.clear()
-        for k in keys:
+        for k in sorted(dict.keys()):
             ports_string = ", ".join(dict[k])
-            if not (self.match(ports_string, filter) or self.match(k[0], filter) or self.match(k[1], filter) ):
+            if not (self.match(ports_string, filter) or self.match(k[0], filter) or self.match(k[1], filter)):
                 continue
             iter = self.store.append()
             self.store.set_value(iter, TYPE_COL, k[0])
             self.store.set_value(iter, PROTOCOL_COL, k[1])
             self.store.set_value(iter, PORT_COL, ports_string)
             self.store.set_value(iter, MLS_COL, "")
-        self.view.get_selection().select_path ((0,))
+        self.view.get_selection().select_path((0,))
 
     def propertiesDialog(self):
         if self.edit:
@@ -169,7 +172,7 @@ class portsPage(semanagePage):
         protocol = store.get_value(iter, PROTOCOL_COL)
         liststore = self.ports_protocol_combo.get_model()
         iter = liststore.get_iter_first()
-        while iter != None and liststore.get_value(iter,0) != protocol:
+        while iter != None and liststore.get_value(iter, 0) != protocol:
             iter = liststore.iter_next(iter)
         if iter != None:
             self.ports_protocol_combo.set_active_iter(iter)
@@ -187,13 +190,13 @@ class portsPage(semanagePage):
         protocol = store.get_value(iter, 1)
         try:
             self.wait()
-            (rc, out) = commands.getstatusoutput("semanage port -d -p %s %s" % (protocol, port))
+            (rc, out) = getstatusoutput("semanage port -d -p %s %s" % (protocol, port))
             self.ready()
             if rc != 0:
                 return self.error(out)
             store.remove(iter)
-            self.view.get_selection().select_path ((0,))
-        except ValueError, e:
+            self.view.get_selection().select_path((0,))
+        except ValueError as e:
             self.error(e.args[0])
 
     def add(self):
@@ -204,13 +207,13 @@ class portsPage(semanagePage):
             port_number = "1"
         for i in port_number.split("-"):
             if not i.isdigit():
-                self.error(_("Port number \"%s\" is not valid.  0 < PORT_NUMBER < 65536 ") % port_number )
+                self.error(_("Port number \"%s\" is not valid.  0 < PORT_NUMBER < 65536 ") % port_number)
                 return False
         list_model = self.ports_protocol_combo.get_model()
         iter = self.ports_protocol_combo.get_active_iter()
-        protocol = list_model.get_value(iter,0)
+        protocol = list_model.get_value(iter, 0)
         self.wait()
-        (rc, out) = commands.getstatusoutput("semanage port -a -p %s -r %s -t %s %s" % (protocol, mls, target, port_number))
+        (rc, out) = getstatusoutput("semanage port -a -p %s -r %s -t %s %s" % (protocol, mls, target, port_number))
         self.ready()
         if rc != 0:
             self.error(out)
@@ -228,9 +231,9 @@ class portsPage(semanagePage):
         port_number = self.ports_number_entry.get_text().strip()
         list_model = self.ports_protocol_combo.get_model()
         iter = self.ports_protocol_combo.get_active_iter()
-        protocol = list_model.get_value(iter,0)
+        protocol = list_model.get_value(iter, 0)
         self.wait()
-        (rc, out) = commands.getstatusoutput("semanage port -m -p %s -r %s -t %s %s" % (protocol, mls, target, port_number))
+        (rc, out) = getstatusoutput("semanage port -m -p %s -r %s -t %s %s" % (protocol, mls, target, port_number))
         self.ready()
         if rc != 0:
             self.error(out)

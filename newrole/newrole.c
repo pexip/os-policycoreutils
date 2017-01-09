@@ -66,7 +66,6 @@
 #include <string.h>
 #include <errno.h>
 #include <selinux/selinux.h>	/* for is_selinux_enabled() */
-#include <selinux/flask.h>	/* for SECCLASS_CHR_FILE */
 #include <selinux/context.h>	/* for context-mangling functions */
 #include <selinux/get_default_type.h>
 #include <selinux/get_context_list.h>	/* for SELINUX_DEFAULTUSER */
@@ -75,7 +74,7 @@
 #ifdef USE_AUDIT
 #include <libaudit.h>
 #endif
-#if defined(AUDIT_LOG_PRIV) || (NAMESPACE_PRIV)
+#if defined(AUDIT_LOG_PRIV) || defined(NAMESPACE_PRIV)
 #include <sys/prctl.h>
 #include <cap-ng.h>
 #endif
@@ -167,7 +166,7 @@ static char *build_new_range(char *newlevel, const char *range)
 #include <security/pam_appl.h>	/* for PAM functions */
 #include <security/pam_misc.h>	/* for misc_conv PAM utility function */
 
-char *service_name = "newrole";
+const char *service_name = "newrole";
 
 /* authenticate_via_pam()
  *
@@ -279,7 +278,7 @@ static int process_pam_config(FILE * cfg)
 			continue;
 
 		app = service = NULL;
-		ret = sscanf(buffer, "%as %as\n", &app, &service);
+		ret = sscanf(buffer, "%ms %ms\n", &app, &service);
 		if (ret < 2 || !app || !service)
 			goto err;
 
@@ -308,7 +307,7 @@ static int process_pam_config(FILE * cfg)
  *  Files specified one per line executable with a corresponding
  *  pam service name.
  */
-static int read_pam_config()
+static int read_pam_config(void)
 {
 	const char *config_file_path = PAM_SERVICE_CONFIG;
 	FILE *cfg = NULL;
@@ -547,18 +546,27 @@ static int drop_capabilities(int full)
 	if (!uid) return 0;
 
 	capng_setpid(getpid());
-	capng_clear(CAPNG_SELECT_BOTH);
-	if (capng_lock() < 0) 
+	capng_clear(CAPNG_SELECT_CAPS);
+
+	if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) < 0) {
+		fprintf(stderr, _("Error resetting KEEPCAPS, aborting\n"));
 		return -1;
+	}
 
 	/* Change uid */
 	if (setresuid(uid, uid, uid)) {
 		fprintf(stderr, _("Error changing uid, aborting.\n"));
 		return -1;
 	}
+
+	if (prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) < 0) {
+		fprintf(stderr, _("Error resetting KEEPCAPS, aborting\n"));
+		return -1;
+	}
+
 	if (! full) 
 		capng_update(CAPNG_ADD, CAPNG_EFFECTIVE | CAPNG_PERMITTED, CAP_AUDIT_WRITE);
-	return capng_apply(CAPNG_SELECT_BOTH);
+	return capng_apply(CAPNG_SELECT_CAPS);
 }
 #elif defined(NAMESPACE_PRIV)
 /**
@@ -576,20 +584,32 @@ static int drop_capabilities(int full)
  */
 static int drop_capabilities(int full)
 {
-	capng_setpid(getpid());
-	capng_clear(CAPNG_SELECT_BOTH);
-	if (capng_lock() < 0) 
-		return -1;
-
 	uid_t uid = getuid();
+	if (!uid) return 0;
+
+	capng_setpid(getpid());
+	capng_clear(CAPNG_SELECT_CAPS);
+
+	if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) < 0) {
+		fprintf(stderr, _("Error resetting KEEPCAPS, aborting\n"));
+		return -1;
+	}
+
 	/* Change uid */
 	if (setresuid(uid, uid, uid)) {
 		fprintf(stderr, _("Error changing uid, aborting.\n"));
 		return -1;
 	}
+
+	if (prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) < 0) {
+		fprintf(stderr, _("Error resetting KEEPCAPS, aborting\n"));
+		return -1;
+	}
+
 	if (! full) 
-		capng_updatev(CAPNG_ADD, CAPNG_EFFECTIVE | CAPNG_PERMITTED, CAP_SYS_ADMIN , CAP_FOWNER , CAP_CHOWN, CAP_DAC_OVERRIDE, CAP_SETPCAP, -1);
-	return capng_apply(CAPNG_SELECT_BOTH);
+		capng_updatev(CAPNG_ADD, CAPNG_EFFECTIVE | CAPNG_PERMITTED, CAP_SYS_ADMIN , CAP_FOWNER , CAP_CHOWN, CAP_DAC_OVERRIDE, CAP_AUDIT_WRITE, -1);
+	
+	return capng_apply(CAPNG_SELECT_CAPS);
 }
 
 #else
@@ -680,7 +700,7 @@ static int relabel_tty(const char *ttyn, security_context_t new_context,
 		       security_context_t * tty_context,
 		       security_context_t * new_tty_context)
 {
-	int fd;
+	int fd, rc;
 	int enforcing = security_getenforce();
 	security_context_t tty_con = NULL;
 	security_context_t new_tty_con = NULL;
@@ -699,7 +719,13 @@ static int relabel_tty(const char *ttyn, security_context_t new_context,
 		fprintf(stderr, _("Error!  Could not open %s.\n"), ttyn);
 		return fd;
 	}
-	fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+	/* this craziness is to make sure we cann't block on open and deadlock */
+	rc = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+	if (rc) {
+		fprintf(stderr, _("Error!  Could not clear O_NONBLOCK on %s\n"), ttyn);
+		close(fd);
+		return rc;
+	}
 
 	if (fgetfilecon(fd, &tty_con) < 0) {
 		fprintf(stderr, _("%s!  Could not get current context "
@@ -711,7 +737,7 @@ static int relabel_tty(const char *ttyn, security_context_t new_context,
 
 	if (tty_con &&
 	    (security_compute_relabel(new_context, tty_con,
-				      SECCLASS_CHR_FILE, &new_tty_con) < 0)) {
+				      string_to_security_class("chr_file"), &new_tty_con) < 0)) {
 		fprintf(stderr, _("%s!  Could not get new context for %s, "
 				  "not relabeling tty.\n"),
 			enforcing ? "Error" : "Warning", ttyn);
@@ -967,7 +993,7 @@ static int parse_command_line_arguments(int argc, char **argv, char *ttyn,
 /**
  * Take care of any signal setup
  */
-static int set_signal_handles()
+static int set_signal_handles(void)
 {
 	sigset_t empty;
 
@@ -1010,9 +1036,9 @@ int main(int argc, char *argv[])
 	int fd;
 	pid_t childPid = 0;
 	char *shell_argv0 = NULL;
+	int rc;
 
 #ifdef USE_PAM
-	int rc;
 	int pam_status;		/* pam return code */
 	pam_handle_t *pam_handle;	/* opaque handle used by all PAM functions */
 
@@ -1105,7 +1131,7 @@ int main(int argc, char *argv[])
 			 * command when invoked by newrole.
 			 */
 			char *cmd = NULL;
-			rc = sscanf(argv[optind + 1], "%as", &cmd);
+			rc = sscanf(argv[optind + 1], "%ms", &cmd);
 			if (rc != EOF && cmd) {
 				char *app_service_name =
 				    (char *)hashtab_search(app_service_names,
@@ -1226,15 +1252,23 @@ int main(int argc, char *argv[])
 		fd = open(ttyn, O_RDWR | O_NONBLOCK);
 		if (fd != 0)
 			goto err_close_pam;
-		fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+		rc = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+		if (rc)
+			goto err_close_pam;
+
 		fd = open(ttyn, O_RDWR | O_NONBLOCK);
 		if (fd != 1)
 			goto err_close_pam;
-		fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+		rc = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+		if (rc)
+			goto err_close_pam;
+
 		fd = open(ttyn, O_RDWR | O_NONBLOCK);
 		if (fd != 2)
 			goto err_close_pam;
-		fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+		rc = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+		if (rc)
+			goto err_close_pam;
 
 	}
 	/*
@@ -1268,19 +1302,24 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	if (send_audit_message(1, old_context, new_context, ttyn))
+	if (send_audit_message(1, old_context, new_context, ttyn)) {
+		fprintf(stderr, _("Failed to send audit message"));
 		goto err_close_pam_session;
+	}
 	freecon(old_context); old_context=NULL;
 	freecon(new_context); new_context=NULL;
 
 #ifdef NAMESPACE_PRIV
-	if (transition_to_caller_uid())
+	if (transition_to_caller_uid()) {
+		fprintf(stderr, _("Failed to transition to namespace\n"));
 		goto err_close_pam_session;
+	}
 #endif
 
-	if (drop_capabilities(TRUE))
+	if (drop_capabilities(TRUE)) {
+		fprintf(stderr, _("Failed to drop capabilities %m\n"));
 		goto err_close_pam_session;
-
+	}
 	/* Handle environment changes */
 	if (restore_environment(preserve_environment, old_environ, &pw)) {
 		fprintf(stderr, _("Unable to restore the environment, "

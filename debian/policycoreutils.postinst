@@ -39,6 +39,9 @@ SELINUXTYPE=default
 SETLOCALDEFS=0
 EOF
         fi
+        if [ ! -e /usr/sbin/load_policy ]; then
+            ln -s /sbin/load_policy /usr/sbin/load_policy
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

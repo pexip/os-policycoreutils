@@ -1,0 +1,72 @@
+--- a/audit2allow/audit2allow
++++ b/audit2allow/audit2allow
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python -Es
++#! /usr/bin/python3 -Es
+ # Authors: Karl MacMillan <kmacmillan@mentalrootkit.com>
+ # Authors: Dan Walsh <dwalsh@redhat.com>
+ #
+--- a/audit2allow/sepolgen-ifgen
++++ b/audit2allow/sepolgen-ifgen
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python -Es
++#! /usr/bin/python3 -Es
+ #
+ # Authors: Karl MacMillan <kmacmillan@mentalrootkit.com>
+ #
+--- a/sandbox/sandbox
++++ b/sandbox/sandbox
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python -Es
++#! /usr/bin/python3 -Es
+ # Authors: Dan Walsh <dwalsh@redhat.com>
+ # Authors: Thomas Liu <tliu@fedoraproject.org>
+ # Authors: Josh Cogliati
+--- a/scripts/chcat
++++ b/scripts/chcat
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python -Es
++#! /usr/bin/python3 -Es
+ # Copyright (C) 2005 Red Hat
+ # see file 'COPYING' for use and warranty information
+ #
+--- a/semanage/semanage
++++ b/semanage/semanage
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python -Es
++#! /usr/bin/python3 -Es
+ # Copyright (C) 2012-2013 Red Hat
+ # AUTHOR: Miroslav Grepl <mgrepl@redhat.com>
+ # AUTHOR: David Quigley <selinux@davequigley.com>
+--- a/sepolicy/sepolicy.py
++++ b/sepolicy/sepolicy.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python -Es
++#! /usr/bin/python3 -Es
+ # Copyright (C) 2012 Red Hat
+ # AUTHOR: Dan Walsh <dwalsh@redhat.com>
+ # see file 'COPYING' for use and warranty information
+--- a/sandbox/start
++++ b/sandbox/start
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python -Es
++#! /usr/bin/python3 -Es
+ try:
+     from subprocess import getstatusoutput
+ except ImportError:
+--- a/semanage/seobject.py
++++ b/semanage/seobject.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python -Es
++#! /usr/bin/python3 -Es
+ # Copyright (C) 2005-2013 Red Hat
+ # see file 'COPYING' for use and warranty information
+ #
+--- a/sepolicy/selinux_server.py
++++ b/sepolicy/selinux_server.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/python3
+ 
+ import dbus
+ import dbus.service

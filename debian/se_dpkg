@@ -1,9 +1,0 @@
-#!/bin/sh
-
-EXEC=`echo $0 | cut -f2 -d_`
-
-if [ "$EXEC" != "dpkg" ]; then
-  cd /
-fi
-
-exec /usr/sbin/run_init $EXEC "$@"
