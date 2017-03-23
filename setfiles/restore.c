@@ -1,4 +1,6 @@
 #include "restore.h"
+#include <glob.h>
+#include <selinux/context.h>
 
 #define SKIP -2
 #define ERR -1
@@ -31,9 +33,7 @@ struct edir {
 
 
 static file_spec_t *fl_head;
-static int exclude(const char *file);
 static int filespec_add(ino_t ino, const security_context_t con, const char *file);
-static int only_changed_user(const char *a, const char *b);
 struct restore_opts *r_opts = NULL;
 static void filespec_destroy(void);
 static void filespec_eval(void);
@@ -53,7 +53,6 @@ void remove_exclude(const char *directory)
 		}
 	}
 	return;
-
 }
 
 void restore_init(struct restore_opts *opts)
@@ -101,25 +100,31 @@ static int match(const char *name, struct stat *sb, char **con)
 	else
 		return selabel_lookup_raw(r_opts->hnd, con, name, sb->st_mode);
 }
-static int restore(FTSENT *ftsent)
+static int restore(FTSENT *ftsent, int recurse)
 {
 	char *my_file = strdupa(ftsent->fts_path);
-	int ret;
-	char *context, *newcon;
-	int user_only_changed = 0;
+	int ret = -1;
+	security_context_t curcon = NULL, newcon = NULL;
+	float progress;
+	if (match(my_file, ftsent->fts_statp, &newcon) < 0) {
+		if ((errno == ENOENT) && ((!recurse) || (r_opts->verbose)))
+			fprintf(stderr, "%s:  Warning no default label for %s\n", r_opts->progname, my_file);
 
-	if (match(my_file, ftsent->fts_statp, &newcon) < 0)
 		/* Check for no matching specification. */
 		return (errno == ENOENT) ? 0 : -1;
+	}
 
 	if (r_opts->progress) {
 		r_opts->count++;
-		if (r_opts->count % (80 * STAR_COUNT) == 0) {
-			fprintf(stdout, "\n");
-			fflush(stdout);
-		}
 		if (r_opts->count % STAR_COUNT == 0) {
-			fprintf(stdout, "*");
+			if (r_opts->progress == 1) {
+				fprintf(stdout, "\r%luk", (size_t) r_opts->count / STAR_COUNT );
+			} else {
+				if (r_opts->nfile > 0) {
+					progress = (r_opts->count < r_opts->nfile) ? (100.0 * r_opts->count / r_opts->nfile) : 100;
+					fprintf(stdout, "\r%-.1f%%", progress);
+				}
+			}
 			fflush(stdout);
 		}
 	}
@@ -144,74 +149,105 @@ static int restore(FTSENT *ftsent)
 		printf("%s:  %s matched by %s\n", r_opts->progname, my_file, newcon);
 	}
 
+	/*
+	 * Do not relabel if their is no default specification for this file
+	 */
+
+	if (strcmp(newcon, "<<none>>") == 0) {
+		goto out;
+	}
+
 	/* Get the current context of the file. */
-	ret = lgetfilecon_raw(ftsent->fts_accpath, &context);
+	ret = lgetfilecon_raw(ftsent->fts_accpath, &curcon);
 	if (ret < 0) {
 		if (errno == ENODATA) {
-			context = NULL;
+			curcon = NULL;
 		} else {
 			fprintf(stderr, "%s get context on %s failed: '%s'\n",
 				r_opts->progname, my_file, strerror(errno));
 			goto err;
 		}
-		user_only_changed = 0;
-	} else
-		user_only_changed = only_changed_user(context, newcon);
+	}
+
 	/* lgetfilecon returns number of characters and ret needs to be reset
 	 * to 0.
 	 */
 	ret = 0;
 
 	/*
-	 * Do not relabel the file if the matching specification is 
-	 * <<none>> or the file is already labeled according to the 
-	 * specification.
+	 * Do not relabel the file if the file is already labeled according to
+	 * the specification.
 	 */
-	if ((strcmp(newcon, "<<none>>") == 0) ||
-	    (context && (strcmp(context, newcon) == 0))) {
-		freecon(context);
+	if (curcon && (strcmp(curcon, newcon) == 0)) {
 		goto out;
 	}
 
-	if (!r_opts->force && context && (is_context_customizable(context) > 0)) {
+	if (!r_opts->force && curcon && (is_context_customizable(curcon) > 0)) {
 		if (r_opts->verbose > 1) {
 			fprintf(stderr,
 				"%s: %s not reset customized by admin to %s\n",
-				r_opts->progname, my_file, context);
+				r_opts->progname, my_file, curcon);
 		}
-		freecon(context);
 		goto out;
 	}
 
-	if (r_opts->verbose) {
-		/* If we're just doing "-v", trim out any relabels where
-		 * the user has r_opts->changed but the role and type are the
-		 * same.  For "-vv", emit everything. */
-		if (r_opts->verbose > 1 || !user_only_changed) {
-			printf("%s reset %s context %s->%s\n",
-			       r_opts->progname, my_file, context ?: "", newcon);
+	/*
+	 *  Do not change label unless this is a force or the type is different
+	 */
+	if (!r_opts->force && curcon) {
+		int types_differ = 0;
+		context_t cona;
+		context_t conb;
+		int err = 0;
+		cona = context_new(curcon);
+		if (! cona) {
+			goto out;
+		}
+		conb = context_new(newcon);
+		if (! conb) {
+			context_free(cona);
+			goto out;
+		}
+
+		types_differ = strcmp(context_type_get(cona), context_type_get(conb));
+		if (types_differ) {
+			err |= context_user_set(conb, context_user_get(cona));
+			err |= context_role_set(conb, context_role_get(cona));
+			err |= context_range_set(conb, context_range_get(cona));
+			if (!err) {
+				freecon(newcon);
+				newcon = strdup(context_str(conb));
+			}
+		}
+		context_free(cona);
+		context_free(conb);
+
+		if (!types_differ || err) {
+			goto out;
 		}
 	}
 
-	if (r_opts->logging && !user_only_changed) {
-		if (context)
+	if (r_opts->verbose) {
+		printf("%s reset %s context %s->%s\n",
+		       r_opts->progname, my_file, curcon ?: "", newcon);
+	}
+
+	if (r_opts->logging && r_opts->change) {
+		if (curcon)
 			syslog(LOG_INFO, "relabeling %s from %s to %s\n",
-			       my_file, context, newcon);
+			       my_file, curcon, newcon);
 		else
 			syslog(LOG_INFO, "labeling %s to %s\n",
 			       my_file, newcon);
 	}
 
-	if (r_opts->outfile && !user_only_changed)
+	if (r_opts->outfile)
 		fprintf(r_opts->outfile, "%s\n", my_file);
-
-	if (context)
-		freecon(context);
 
 	/*
 	 * Do not relabel the file if -n was used.
 	 */
-	if (!r_opts->change || user_only_changed)
+	if (!r_opts->change)
 		goto out;
 
 	/*
@@ -223,14 +259,17 @@ static int restore(FTSENT *ftsent)
 			r_opts->progname, my_file, newcon, strerror(errno));
 		goto skip;
 	}
-	ret = 1;
+	ret = 0;
 out:
+	freecon(curcon);
 	freecon(newcon);
 	return ret;
 skip:
+	freecon(curcon);
 	freecon(newcon);
 	return SKIP;
 err:
+	freecon(curcon);
 	freecon(newcon);
 	return ERR;
 }
@@ -239,7 +278,7 @@ err:
  * This function is called by fts on each file during
  * the directory traversal.
  */
-static int apply_spec(FTSENT *ftsent)
+static int apply_spec(FTSENT *ftsent, int recurse)
 {
 	if (ftsent->fts_info == FTS_DNR) {
 		fprintf(stderr, "%s:  unable to read directory %s\n",
@@ -247,7 +286,7 @@ static int apply_spec(FTSENT *ftsent)
 		return SKIP;
 	}
 	
-	int rc = restore(ftsent);
+	int rc = restore(ftsent, recurse);
 	if (rc == ERR) {
 		if (!r_opts->abort_on_error)
 			return SKIP;
@@ -255,53 +294,21 @@ static int apply_spec(FTSENT *ftsent)
 	return rc;
 }
 
-static int symlink_realpath(char *name, char *path)
-{
-	char *p = NULL, *file_sep;
-	char *tmp_path = strdupa(name);
-	size_t len = 0;
-
-	if (!tmp_path) {
-		fprintf(stderr, "strdupa on %s failed:  %s\n", name,
-			strerror(errno));
-		return -1;
-	}
-	file_sep = strrchr(tmp_path, '/');
-	if (file_sep == tmp_path) {
-		file_sep++;
-		p = strcpy(path, "");
-	} else if (file_sep) {
-		*file_sep = 0;
-		file_sep++;
-		p = realpath(tmp_path, path);
-	} else {
-		file_sep = tmp_path;
-		p = realpath("./", path);
-	}
-	if (p)
-		len = strlen(p);
-	if (!p || len + strlen(file_sep) + 2 > PATH_MAX) {
-		fprintf(stderr, "symlink_realpath(%s) failed %s\n", name,
-			strerror(errno));
-		return -1;
-	}
-	p += len;
-	/* ensure trailing slash of directory name */
-	if (len == 0 || *(p - 1) != '/') {
-		*p = '/';
-		p++;
-	}
-	strcpy(p, file_sep);
-	return 0;
-}
+#include <sys/statvfs.h>
 
 static int process_one(char *name, int recurse_this_path)
 {
 	int rc = 0;
 	const char *namelist[2] = {name, NULL};
 	dev_t dev_num = 0;
-	FTS *fts_handle;
-	FTSENT *ftsent;
+	FTS *fts_handle = NULL;
+	FTSENT *ftsent = NULL;
+
+	if (r_opts == NULL){
+		fprintf(stderr,
+			"Must call initialize first!");
+		goto err;
+	}
 
 	fts_handle = fts_open((char **)namelist, r_opts->fts_flags, NULL);
 	if (fts_handle  == NULL) {
@@ -313,10 +320,15 @@ static int process_one(char *name, int recurse_this_path)
 
 
 	ftsent = fts_read(fts_handle);
-	if (ftsent != NULL) {
-		/* Keep the inode of the first one. */
-		dev_num = ftsent->fts_statp->st_dev;
+	if (ftsent == NULL) {
+		fprintf(stderr,
+			"%s: error while labeling %s:  %s\n",
+			r_opts->progname, namelist[0], strerror(errno));
+		goto err;
 	}
+
+	/* Keep the inode of the first one. */
+	dev_num = ftsent->fts_statp->st_dev;
 
 	do {
 		rc = 0;
@@ -333,7 +345,8 @@ static int process_one(char *name, int recurse_this_path)
 				continue;
 			}
 		}
-		rc = apply_spec(ftsent);
+
+		rc = apply_spec(ftsent, recurse_this_path);
 		if (rc == SKIP)
 			fts_set(fts_handle, ftsent, FTS_SKIP);
 		if (rc == ERR)
@@ -357,11 +370,34 @@ err:
 	goto out;
 }
 
+int process_glob(char *name, int recurse) {
+	glob_t globbuf;
+	size_t i = 0;
+	int errors;
+	memset(&globbuf, 0, sizeof(globbuf));
+	errors = glob(name, GLOB_TILDE | GLOB_PERIOD | GLOB_NOCHECK | GLOB_BRACE, NULL, &globbuf);
+	if (errors) 
+		return errors;
+
+	for (i = 0; i < globbuf.gl_pathc; i++) {
+		int len = strlen(globbuf.gl_pathv[i]) -2;
+		if (len > 0 && strcmp(&globbuf.gl_pathv[i][len--], "/.") == 0)
+			continue;
+		if (len > 0 && strcmp(&globbuf.gl_pathv[i][len], "/..") == 0)
+			continue;
+		int rc = process_one_realpath(globbuf.gl_pathv[i], recurse);
+		if (rc < 0)
+			errors = rc;
+	}
+	globfree(&globbuf);
+	return errors;
+}
+
 int process_one_realpath(char *name, int recurse)
 {
 	int rc = 0;
 	char *p;
-	struct stat sb;
+	struct stat64 sb;
 
 	if (r_opts == NULL){
 		fprintf(stderr,
@@ -372,8 +408,10 @@ int process_one_realpath(char *name, int recurse)
 	if (!r_opts->expand_realpath) {
 		return process_one(name, recurse);
 	} else {
-		rc = lstat(name, &sb);
+		rc = lstat64(name, &sb);
 		if (rc < 0) {
+			if (r_opts->ignore_enoent && errno == ENOENT)
+				return 0;
 			fprintf(stderr, "%s:  lstat(%s) failed:  %s\n",
 				r_opts->progname, name,	strerror(errno));
 			return -1;
@@ -382,7 +420,7 @@ int process_one_realpath(char *name, int recurse)
 		if (S_ISLNK(sb.st_mode)) {
 			char path[PATH_MAX + 1];
 
-			rc = symlink_realpath(name, path);
+			rc = realpath_not_final(name, path);
 			if (rc < 0)
 				return rc;
 			rc = process_one(path, 0);
@@ -409,7 +447,7 @@ int process_one_realpath(char *name, int recurse)
 	}
 }
 
-static int exclude(const char *file)
+int exclude(const char *file)
 {
 	int i = 0;
 	for (i = 0; i < excludeCtr; i++) {
@@ -453,22 +491,6 @@ int add_exclude(const char *directory)
 	excludeArray[excludeCtr++].size = len;
 
 	return 0;
-}
-
-/* Compare two contexts to see if their differences are "significant",
- * or whether the only difference is in the user. */
-static int only_changed_user(const char *a, const char *b)
-{
-	char *rest_a, *rest_b;	/* Rest of the context after the user */
-	if (r_opts->force)
-		return 0;
-	if (!a || !b)
-		return 0;
-	rest_a = strchr(a, ':');
-	rest_b = strchr(b, ':');
-	if (!rest_a || !rest_b)
-		return 0;
-	return (strcmp(rest_a, rest_b) == 0);
 }
 
 /*
@@ -537,7 +559,7 @@ static int filespec_add(ino_t ino, const security_context_t con, const char *fil
 {
 	file_spec_t *prevfl, *fl;
 	int h, ret;
-	struct stat sb;
+	struct stat64 sb;
 
 	if (!fl_head) {
 		fl_head = malloc(sizeof(file_spec_t) * HASH_BUCKETS);
@@ -550,7 +572,7 @@ static int filespec_add(ino_t ino, const security_context_t con, const char *fil
 	for (prevfl = &fl_head[h], fl = fl_head[h].next; fl;
 	     prevfl = fl, fl = fl->next) {
 		if (ino == fl->ino) {
-			ret = lstat(fl->file, &sb);
+			ret = lstat64(fl->file, &sb);
 			if (ret < 0 || sb.st_ino != ino) {
 				freecon(fl->con);
 				free(fl->file);
@@ -602,5 +624,81 @@ static int filespec_add(ino_t ino, const security_context_t con, const char *fil
 	return -1;
 }
 
+#include <sys/utsname.h>
+int file_system_count(char *name) {
+	struct statvfs statvfs_buf;
+	int nfile = 0;
+	memset(&statvfs_buf, 0, sizeof(statvfs_buf));
+	if (!statvfs(name, &statvfs_buf)) {
+		nfile = statvfs_buf.f_files - statvfs_buf.f_ffree;
+	}
+	return nfile;
+}
 
+/*
+   Search /proc/mounts for all file systems that do not support extended
+   attributes and add them to the exclude directory table.  File systems
+   that support security labels have the seclabel option, return total file count
+*/
+int exclude_non_seclabel_mounts()
+{
+	struct utsname uts;
+	FILE *fp;
+	size_t len;
+	ssize_t num;
+	int index = 0, found = 0;
+	char *mount_info[4];
+	char *buf = NULL, *item;
+	int nfile = 0;
+	/* Check to see if the kernel supports seclabel */
+	if (uname(&uts) == 0 && strverscmp(uts.release, "2.6.30") < 0)
+		return 0;
+	if (is_selinux_enabled() <= 0)
+		return 0;
+
+	fp = fopen("/proc/mounts", "r");
+	if (!fp)
+		return 0;
+
+	while ((num = getline(&buf, &len, fp)) != -1) {
+		found = 0;
+		index = 0;
+		item = strtok(buf, " ");
+		while (item != NULL) {
+			mount_info[index] = item;
+			if (index == 3)
+				break;
+			index++;
+			item = strtok(NULL, " ");
+		}
+		if (index < 3) {
+			fprintf(stderr,
+				"/proc/mounts record \"%s\" has incorrect format.\n",
+				buf);
+			continue;
+		}
+
+		/* remove pre-existing entry */
+		remove_exclude(mount_info[1]);
+
+		item = strtok(mount_info[3], ",");
+		while (item != NULL) {
+			if (strcmp(item, "seclabel") == 0) {
+				found = 1;
+				nfile += file_system_count(mount_info[1]);
+				break;
+			}
+			item = strtok(NULL, ",");
+		}
+
+		/* exclude mount points without the seclabel option */
+		if (!found)
+			add_exclude(mount_info[1]);
+	}
+
+	free(buf);
+	fclose(fp);
+	/* return estimated #Files + 5% for directories and hard links */
+	return nfile * 1.05;
+}
 
