@@ -1,7 +1,8 @@
-#! /usr/bin/python -E
+#! /usr/bin/python -Es
 # Authors: Karl MacMillan <kmacmillan@mentalrootkit.com>
+# Authors: Dan Walsh <dwalsh@redhat.com>
 #
-# Copyright (C) 2006-2007  Red Hat
+# Copyright (C) 2006-2013  Red Hat
 # see file 'COPYING' for use and warranty information
 #
 # This program is free software; you can redistribute it and/or
@@ -18,7 +19,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #
 
-import sys
+import sys, os
 
 import sepolgen.audit as audit
 import sepolgen.policygen as policygen
@@ -28,6 +29,9 @@ import sepolgen.objectmodel as objectmodel
 import sepolgen.defaults as defaults
 import sepolgen.module as module
 from sepolgen.sepolgeni18n import _
+import selinux.audit2why as audit2why
+import locale
+locale.setlocale(locale.LC_ALL, '')
 
 class AuditToPolicy:
     VERSION = "%prog .1"
@@ -46,6 +50,7 @@ class AuditToPolicy:
                           help="audit messages since last boot conflicts with -i")
         parser.add_option("-a", "--all", action="store_true", dest="audit", default=False,
                           help="read input from audit log - conflicts with -i")
+        parser.add_option("-p", "--policy", dest="policy", default=None, help="Policy file to use for analysis")
         parser.add_option("-d", "--dmesg", action="store_true", dest="dmesg", default=False,
                           help="read input from dmesg - conflicts with --all and --input")
         parser.add_option("-i", "--input", dest="input",
@@ -78,8 +83,7 @@ class AuditToPolicy:
         parser.add_option("--interface-info", dest="interface_info", help="file name of interface information")
         parser.add_option("--debug", dest="debug", action="store_true", default=False,
                           help="leave generated modules for -M")
-
-        parser.add_option("-w", "--why", dest="audit2why",  action="store_true", default=False,
+        parser.add_option("-w", "--why", dest="audit2why",  action="store_true", default=(os.path.basename(sys.argv[0])=="audit2why"),
                           help="Translates SELinux audit messages into a description of why the access was denied")
 
         options, args = parser.parse_args()
@@ -102,7 +106,7 @@ class AuditToPolicy:
         if name:
             options.requires = True
             if not module.is_valid_name(name):
-                sys.stderr.write("only letters and numbers allowed in module names\n")
+                sys.stderr.write('error: module names must begin with a letter, optionally followed by letters, numbers, "-", "_", "."\n')
                 sys.exit(2)
 
         # Make -M and -o conflict
@@ -231,29 +235,12 @@ class AuditToPolicy:
 
     def __output_audit2why(self):
             import selinux
-            import selinux.audit2why as audit2why
             import seobject
-            audit2why.init()
             for i in self.__parser.avc_msgs:
-                rc, bools = audit2why.analyze(i.scontext.to_string(), i.tcontext.to_string(), i.tclass, i.accesses)
+                rc = i.type
+                data = i.data
                 if rc >= 0:
                     print "%s\n\tWas caused by:" % i.message
-                if rc == audit2why.NOPOLICY:
-                    raise RuntimeError("Must call policy_init first")
-                if rc == audit2why.BADTCON:
-                    print "Invalid Target Context %s\n" % i.tcontext
-                    continue
-                if rc == audit2why.BADSCON:
-                    print "Invalid Source Context %s\n" % i.scontext
-                    continue
-                if rc == audit2why.BADSCON:
-                    print "Invalid Type Class %s\n" % i.tclass
-                    continue
-                if rc == audit2why.BADPERM:
-                    print "Invalid permission %s\n" % i.accesses
-                    continue
-                if rc == audit2why. BADCOMPUTE:
-                    raise RuntimeError("Error during access vector computation")
                 if rc == audit2why.ALLOW:
                     print "\t\tUnknown - would be allowed by active policy\n",
                     print "\t\tPossible mismatch between this policy and the one under which the audit message was generated.\n"
@@ -265,15 +252,15 @@ class AuditToPolicy:
                     print "\t\tPossible mismatch between current in-memory boolean settings vs. permanent ones.\n"
                     continue
                 if rc == audit2why.BOOLEAN:
-                    if len(bools) > 1:
+                    if len(data) > 1:
                         print "\tOne of the following booleans was set incorrectly."
-                        for b in bools:
+                        for b in data:
                             print "\tDescription:\n\t%s\n"  % seobject.boolean_desc(b[0])
                             print "\tAllow access by executing:\n\t# setsebool -P %s %d"  % (b[0], b[1])
                     else:
-                        print "\tThe boolean %s was set incorrectly. " % (bools[0][0])
-                        print "\tDescription:\n\t%s\n"  % seobject.boolean_desc(bools[0][0])
-                        print "\tAllow access by executing:\n\t# setsebool -P %s %d"  % (bools[0][0], bools[0][1])
+                        print "\tThe boolean %s was set incorrectly. " % (data[0][0])
+                        print "\tDescription:\n\t%s\n"  % seobject.boolean_desc(data[0][0])
+                        print "\tAllow access by executing:\n\t# setsebool -P %s %d"  % (data[0][0], data[0][1])
                     continue
 
                 if rc == audit2why.TERULE:
@@ -282,10 +269,11 @@ class AuditToPolicy:
                     continue
 
                 if rc == audit2why.CONSTRAINT:
-                    print "\t\tPolicy constraint violation.\n"
-                    print "\t\tMay require adding a type attribute to the domain or type to satisfy the constraint.\n"
-                    print "\t\tConstraints are defined in the policy sources in policy/constraints (general), policy/mcs (MCS), and policy/mls (MLS).\n"
-                    continue
+                    print #!!!! This avc is a constraint violation.  You would need to modify the attributes of either the source or target types to allow this access.\n"
+                    print "#Constraint rule:"
+                    print "\n\t" + data[0]
+                    for reason in data[1:]:
+                        print "#\tPossible cause is the source %s and target %s are different.\n" % reason
 
                 if rc == audit2why.RBAC:
                     print "\t\tMissing role allow rule.\n"
@@ -342,7 +330,7 @@ class AuditToPolicy:
                 g.set_module_name(self.__options.module)
 
             if self.__options.output:
-                fd = open(self.__options.output, "w")
+                fd = open(self.__options.output, "a")
             else:
                 fd = sys.stdout
             writer.write(g.get_module(), fd)
@@ -350,11 +338,22 @@ class AuditToPolicy:
     def main(self):
         try:
             self.__parse_options()
+            if self.__options.policy:
+                audit2why.init(self.__options.policy)
+            else:
+                audit2why.init()
+
             self.__read_input()
             self.__process_input()
             self.__output()
         except KeyboardInterrupt:
             sys.exit(0)
+        except ValueError, e:
+            print e
+            sys.exit(1)
+        except IOError, e:
+            print e
+            sys.exit(1)
 
 if __name__ == "__main__":
     app = AuditToPolicy()

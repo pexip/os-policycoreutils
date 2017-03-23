@@ -1,33 +1,35 @@
 # Installation directories.
-PREFIX ?= ${DESTDIR}/usr
-INITDIR ?= ${DESTDIR}/etc/init.d/
-SYSCONFDIR ?= ${DESTDIR}/etc/default
+PREFIX ?= $(DESTDIR)/usr
+SYSCONFDIR ?= $(DESTDIR)/etc/sysconfig
+LIBDIR ?= $(PREFIX)/lib
 BINDIR ?= $(PREFIX)/bin
 SBINDIR ?= $(PREFIX)/sbin
 MANDIR ?= $(PREFIX)/share/man
 LOCALEDIR ?= /usr/share/locale
 SHAREDIR ?= $(PREFIX)/share/sandbox
-override CFLAGS += $(LDFLAGS) -I$(PREFIX)/include -DPACKAGE="\"policycoreutils\""
-LDLIBS += -lselinux -lcap-ng 
+override CFLAGS += $(LDFLAGS) -I$(PREFIX)/include -DPACKAGE="\"policycoreutils\"" -Wall -Werror -Wextra -W
+LDLIBS += -lcgroup -lselinux -lcap-ng -L$(LIBDIR)
+SEUNSHARE_OBJS = seunshare.o
 
-all: sandbox seunshare sandboxX.sh 
+all: sandbox seunshare sandboxX.sh start
 
-seunshare: seunshare.o $(EXTRA_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+seunshare: $(SEUNSHARE_OBJS)
 
 install: all
 	-mkdir -p $(BINDIR)
 	install -m 755 sandbox $(BINDIR)
 	-mkdir -p $(MANDIR)/man8
 	install -m 644 sandbox.8 $(MANDIR)/man8/
+	install -m 644 seunshare.8 $(MANDIR)/man8/
+	-mkdir -p $(MANDIR)/man5
+	install -m 644 sandbox.5 $(MANDIR)/man5/
 	-mkdir -p $(SBINDIR)
 	install -m 4755 seunshare $(SBINDIR)/
 	-mkdir -p $(SHAREDIR)
 	install -m 755 sandboxX.sh $(SHAREDIR)
-	-mkdir -p $(INITDIR)
-	install -m 755 sandbox.init $(INITDIR)/sandbox
+	install -m 755 start $(SHAREDIR)
 	-mkdir -p $(SYSCONFDIR)
-	install -m 644 sandbox.config $(SYSCONFDIR)/sandbox
+	install -m 644 sandbox.conf $(SYSCONFDIR)/sandbox
 
 test:
 	@python test_sandbox.py -v

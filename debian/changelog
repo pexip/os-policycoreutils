@@ -1,34 +1,227 @@
-policycoreutils (2.1.0-3ubuntu1.1pexip2) pexip; urgency=low
+policycoreutils (2.3-1pexip1) pexip; urgency=low
 
-  * debian/policycoreutils.postinst: Do not remove /etc/init.d/selinux
-    when this package is configured. This init script is owned by the
-    selinux package (and removing it breaks dist-upgrade.
+  * Migrate to Jessie
 
- -- John-Mark Bell <jmb@pexip.com>  Fri, 10 Jan 2013 16:30:32 +0000
+ -- John-Mark Bell <jmb@pexip.com>  Thu, 23 Mar 2017 17:54:18 +0000
 
-policycoreutils (2.1.0-3ubuntu1.1pexip1) pexip; urgency=low
+policycoreutils (2.3-1) unstable; urgency=medium
 
-  * Prepare Pexip packaging
+  * Team upload.
+  * New upstream release
+    - debian/control: Bump {build-}dependencies to match the new release
+    - Drop d/p/0025-restorecon-service.patch, d/p/0024-fix-manpages.patch,
+      applied upstream
+    - Drop debian/policycoreutils.mcstrans.service, merged upstream
+    - debian/policycoreutils.install: Install mcstrans.service from upstream
+  * Drop d/p/0002-Made-fixfiles-display-the-progress.patch: the -d flag is
+    already passed to restoreconf and setfiles and the patch is breaking the
+    verbose mode as -v and -p are mutually exclusive.
 
- -- John-Mark Bell <jmb@pexip.com>  Wed, 25 Dec 2013 12:24:25 +0000
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 17 May 2014 12:09:09 +0200
 
-policycoreutils (2.1.0-3ubuntu1.1) precise-proposed; urgency=low
+policycoreutils (2.2.5-1) unstable; urgency=medium
 
-  * Fix FTBFS in precise: (LP: #935368)
-    - Define _GNU_SOURCE earlier in seunshare.c
-    - Update to multiarch path of libsepol.a
-  * debian/policycoreutils.postrm:
-    - Remove the rc.d links on purge (LP: #1005398)
+  * Team upload.
+  * New upstream release
+  * debian/control: Bump Standards-Version to 3.9.5 (no further changes)
 
- -- Jason Conti <jason.conti@gmail.com>  Mon, 04 Jun 2012 12:09:07 -0400
+ -- Laurent Bigonville <bigon@debian.org>  Sun, 29 Dec 2013 14:43:17 +0100
 
-policycoreutils (2.1.0-3ubuntu1) precise; urgency=low
+policycoreutils (2.2.4-1) unstable; urgency=low
 
-  * Merge from Debian testing (LP: #896730).  Remaining changes:
-    - Multiarch support in Makefile (LP: #832802)
-    - debian/postinst: move restorecon to a higher startup level.
+  * Team upload.
+  * New upstream release
+    - Drop d/p/0023-semanage_default_encoding.patch: Merged upstream
 
- -- Leo Iannacone <l3on@ubuntu.com>  Sun, 13 Nov 2011 10:48:50 +0000
+ -- Laurent Bigonville <bigon@debian.org>  Mon, 02 Dec 2013 20:02:14 +0100
+
+policycoreutils (2.2.1-1) unstable; urgency=low
+
+  * Team upload.
+  * New upstream release
+    - debian/control: Bump {build-}dependencies to match the release
+    - debian/control: Add python-dev, libapol-dev and libqpol-dev to the
+      build-depencencies
+    - Add new python-sepolicy package
+    - d/p/0002-Made-fixfiles-display-the-progress.patch: Refreshed
+    - Drop d/p/0004-manpages.patch: Fixed upstream
+    - d/p/0005-build-system.patch: Refreshed
+    - d/p/0006-default-config.patch: Refreshed
+    - d/p/0009-find-does-not-have-a-context-switch.patch: Refreshed
+    - Drop d/p/0013-use_dpkg_buildflags.patch: Fixed upstream
+    - Drop d/p/0014-po-file-update.patch: .po files are not updated during
+      build anymore
+    - d/p/0017-no-sandbox: Refreshed
+    - d/p/0018-sandbox-config.patch: Refreshed
+  * debian/rules: bash-completion script are now properly installed
+  * debian/patches/0022-sepolicy-path.patch: Install sepolicy modules in the
+    correct location
+  * debian/rules: Fix /usr/sbin/load_policy symlink creation
+  * debian/rules: Set $SYSTEMDDIR variable to /lib/systemd, so systemd units
+    files are installed in the correct directory
+  * debian/control, debian/rules: Add calls to dh_systemd tools
+  * debian/rules, debian/policycoreutils.install: Pass --destdir option to
+    dh_auto_install and list files to install in the package
+  * Add debian/patches/0023-semanage_default_encoding.patch: Remove import for
+    not upstreamed module
+  * Add debian/patches/0024-fix-manpages.patch: Fix some minor manpages issues
+  * debian/control: Use canonical URL in VCS-Git field
+  * d/p/0025-restorecon-service.patch: Improve restorecond service file
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 06 Nov 2013 22:32:23 +0100
+
+policycoreutils (2.1.13-2) unstable; urgency=low
+
+  * Team upload.
+  * debian/control:
+    - Add gawk to the build-dependencies, this is needed for some manpages
+      generation
+    - Add python-audit to the Recommends
+    - Bump Standards-Version to 3.9.4 (no further changes)
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 25 May 2013 01:44:10 +0200
+
+policycoreutils (2.1.13-1) experimental; urgency=low
+
+  * Team upload.
+  * New upstream release
+    - Bump {build-}dependencies
+    - debian/patches/0002-Made-fixfiles-display-the-progress.patch: Refreshed
+    - debian/patches/0004-manpages.patch: Refreshed
+    - debian/patches/0005-build-system.patch: Refreshed
+    - debian/patches/0006-default-config.patch: Refreshed
+    - d/p/0007-Fix-infinite-loop-i-watch-code.patch: Dropped, applied upstream
+    - d/p/0008-Only-run-setfiles-if-we-found-read-write-filesystems.patch:
+      Dropped, applied upstream
+    - d/p/0010-fix-ftbfs-with-hardening-flags.patch: Dropped, applied upstream
+    - debian/patches/0011-restorecon-no-error.patch: Dropped, applied upstream
+    - debian/patches/0013-use_dpkg_buildflags.patch: Refreshed
+    - debian/patches/0014-po-file-update.patch: Refreshed
+    - debian/patches/0017-no-sandbox: Refreshed
+  * debian/watch: Fix watch file URL
+  * debian/gbp.conf: Change default git-buildpackage build-directory and the
+    debian-branch to "debian" instead of "upstream"
+  * debian/rules: Move bash completion scripts to the new location
+  * Override INITDIR and SYSCONFDIR from debian/rules instead of patching
+    Makefiles directly
+  * debian/policycoreutils.dirs: Install /var/lib/selinux/ directory, this is
+    needed for some operations of semanage (Closes: #668174)
+  * Add debian/patches/0017-sandbox-config.patch: The sandbox configuration
+    file is located in /etc/default/sandbox
+  * Do not install system-config-selinux for now, it needs some adjustements
+    for debian
+  * debian/policycoreutils.maintscript: Properly remove /etc/init.d/sandbox
+    and /etc/default/sandbox that were dropped previous version
+    (Closes: #689048)
+  * Rework initscripts using /etc/init.d/skeleton as a template
+  * Include common-* files in newrole and run_init pam services
+  * Add dependency against selinux-utils for selinuxenabled executable
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 29 Sep 2012 23:16:16 +0200
+
+policycoreutils (2.1.10-9) unstable; urgency=high
+
+  * Revert the munging of setrans.conf which was introduced in 2.1.10-7.
+    Closes: #677759
+  * Made mcstrans ignore a line containing "s0=" to properly solve the
+    original problem.
+  * Made the mcstrans init script not return an error when you stop it twice.
+  * Included a new version of open_init_pty that doesn't take 100% CPU time.
+    Closes: #474956
+  * Removed sandbox because it's a new feature that we never had working, also
+    removed seunshare because it's not needed and brought in an annoying
+    dependency on libcgroup1
+    Closes: #678590
+
+ -- Russell Coker <russell@coker.com.au>  Tue, 26 Jun 2012 17:22:05 +1000
+
+policycoreutils (2.1.10-8) unstable; urgency=low
+
+  * Drop /selinux directory, we are planning to move to /sys/fs/selinux, and
+    it's already created by libselinux1 package anyway.
+    From Laurent Bigonville
+
+ -- Russell Coker <russell@coker.com.au>  Sat, 16 Jun 2012 23:37:05 +1000
+
+policycoreutils (2.1.10-7) unstable; urgency=low
+
+  * Correctly label /run/setrans.
+  * Fix /etc/selinux/default/setrans.conf if it contains old syntax so we
+    can start the new version of mcstrans.
+
+ -- Russell Coker <russell@coker.com.au>  Sat, 16 Jun 2012 17:59:24 +1000
+
+policycoreutils (2.1.10-6) unstable; urgency=low
+
+  * Team upload.
+  * debian/control, debian/patches/0013-use_dpkg_buildflags.patch: Enable
+    hardening flags for all components of the package (Closes: #665320)
+  * debian/control: Fix Vcs-Browser URL
+  * debian/patches/0014-po-file-update.patch: Update the po files, this allows
+    the package to build twice in a row again (Closes: #662514)
+  * debian/rules: Install the right pam files
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 27 Mar 2012 17:45:36 +0200
+
+policycoreutils (2.1.10-5) unstable; urgency=low
+
+  * Team upload.
+  * Switch to dh sequence and debhelper 9
+  * Merge my missing patches
+  * d/p/fix-ftbfs-hardening-flags.patch: Fix FTBFS with hardening flags
+  * d/policycoreutils.lintian-overrides: Drop non-standard-toplevel-dir selinux/
+  * debian/patches/0006-default-config.patch: Properly disable sandbox by
+    default
+  * Rewrite maintainer scripts to use debhelper generated stanza.
+    (Should closes: #660345)
+  * debian/control: Update Vcs-* fields
+  * Add debian/gbp.conf file
+  * debian/control:
+    - Add Pre-Depends: ${misc:Pre-Depends} field
+    - Make policycoreutils arch:linux-any
+    - Put under the Debian SELinux team maintenance
+    - Bump python-setools dependency to >= 3.3.7-2
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 20 Mar 2012 19:50:46 +0100
+
+policycoreutils (2.1.10-4) unstable; urgency=low
+
+  * Made it depend on python-setools for audit2allow
+
+ -- Russell Coker <russell@coker.com.au>  Mon, 19 Mar 2012 16:00:12 +1100
+
+policycoreutils (2.1.10-2) unstable; urgency=low
+
+  * Depend on python-ipy for semanage
+  * Fix command not found error in init.d/sandbox
+    Closes: #663419
+  * Added patch from Martin Orr to make restorecon not return 1 (error) when
+    it relabels a file.
+    Closes: #662990
+
+ -- Russell Coker <russell@coker.com.au>  Thu, 15 Mar 2012 10:52:29 +1100
+
+policycoreutils (2.1.10-1) unstable; urgency=low
+
+  * New upstream version
+  * Made it build-depend on libcgroup-dev, libdbus-1-dev, libdbus-glib-1-dev,
+    and libglib2.0-dev
+  * Lots of multiarch related changes
+  * Rename /etc/init.d/policycoreutils to /etc/init.d/restorecond
+  * Added per-user configuration for restorecond
+
+ -- Russell Coker <russell@coker.com.au>  Mon, 05 Mar 2012 17:28:46 +1100
+
+policycoreutils (2.1.0-3.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Adjust package to multiarch: export/use DEB_HOST_MULTIARCH in
+    debian/common/* and in some Makefiles; build-depend on dpkg-dev (>=
+    1.16.0). Based on patches from Mitsuya Shibata and Hideki Yamane.
+    Closes: #640630, #652758
+    LP: #832802
+
+ -- gregor herrmann <gregoa@debian.org>  Wed, 15 Feb 2012 19:10:41 +0100
 
 policycoreutils (2.1.0-3) unstable; urgency=low
 
@@ -58,32 +251,11 @@ policycoreutils (2.1.0-2) unstable; urgency=low
 
  -- Russell Coker <russell@coker.com.au>  Mon, 31 Oct 2011 16:35:30 +1100
 
-policycoreutils (2.0.82-5ubuntu2) oneiric; urgency=low
-
-  * Fix FTBFS(LP #832802)
-    - Multiarch support in Makefile.
-
- -- Mitsuya Shibata <mty.shibata@gmail.com>  Sun, 25 Sep 2011 12:11:28 +0900
-
-policycoreutils (2.0.82-5ubuntu1) natty; urgency=low
-
-  * Merge from debian unstable. Remaining change:
-    - ebian/postinst: move restorecon to a higher startup level.
-
- -- Bhavani Shankar <bhavi@ubuntu.com>  Wed, 16 Feb 2011 19:47:17 +0530
-
 policycoreutils (2.0.82-5) unstable; urgency=low
 
   * Make it suggest selinux-policy-dev which is needed by sepolgen-ifgen.
 
  -- Russell Coker <russell@coker.com.au>  Wed, 16 Feb 2011 00:22:13 +1100
-
-policycoreutils (2.0.82-4ubuntu1) natty; urgency=low
-
-  * Merge from debian unstable.  Remaining changes:
-    - debian/postinst: move restorecon to a higher startup level.
-
- -- Artur Rona <ari-tczew@ubuntu.com>  Sat, 20 Nov 2010 21:00:55 +0100
 
 policycoreutils (2.0.82-4) unstable; urgency=low
 
@@ -92,25 +264,11 @@ policycoreutils (2.0.82-4) unstable; urgency=low
 
  -- Russell Coker <russell@coker.com.au>  Sat, 20 Nov 2010 23:40:52 +1100
 
-policycoreutils (2.0.82-3ubuntu1) maverick; urgency=low
-
-  * Merge from debian unstable. (LP: #612126)  Remaining changes:
-    - debian/postinst: move restorecon to a higher startup level.
-
- -- Artur Rona <ari-tczew@tlen.pl>  Sat, 31 Jul 2010 17:34:25 +0200
-
 policycoreutils (2.0.82-3) unstable; urgency=low
 
   * Update the man page for semanage to document -i for command files.
 
  -- Russell Coker <russell@coker.com.au>  Tue, 20 Jul 2010 12:33:36 +1000
-
-policycoreutils (2.0.82-2ubuntu1) maverick; urgency=low
-
-  * Merge from debian unstable.  Remaining changes: LP: #597705
-    - debian/postinst: move restorecon to a higher startup level.
-
- -- Bhavani Shankar <bhavi@ubuntu.com>  Fri, 25 Jun 2010 11:37:15 +0530
 
 policycoreutils (2.0.82-2) unstable; urgency=low
 
@@ -133,13 +291,6 @@ policycoreutils (2.0.82-1) unstable; urgency=low
     + Additional exception handling in chcat from Dan Walsh.
 
  -- Manoj Srivastava <srivasta@debian.org>  Sun, 28 Mar 2010 10:13:19 -0700
-
-policycoreutils (2.0.77-1ubuntu1) lucid; urgency=low
-
-  * Merge from Debian testing.  Remaining changes:
-    - debian/postinst: move restorecon to a higher startup level.
-
- -- Kees Cook <kees@ubuntu.com>  Sat, 12 Dec 2009 09:30:42 -0800
 
 policycoreutils (2.0.77-1) unstable; urgency=low
 
@@ -237,32 +388,6 @@ policycoreutils (2.0.71-1) unstable; urgency=low
 
  -- Manoj Srivastava <srivasta@debian.org>  Thu, 27 Aug 2009 13:06:36 -0500
 
-policycoreutils (2.0.69-2ubuntu3) karmic; urgency=low
-
-  * policycoreutils/restorecond/restorecond.c: handle inotify changes
-    if 2.6.31 to fix 100% CPU in restorecond, thanks to Caleb Case and
-    Martin Orr (LP: #455739).
-
- -- Kees Cook <kees@ubuntu.com>  Mon, 19 Oct 2009 12:37:16 -0700
-
-policycoreutils (2.0.69-2ubuntu2) karmic; urgency=low
-
-  * Install man pages to /usr/share (LP: #418026).
-  * Only use 'seclabel' checking if selinux is enabled (LP: #428043).
-
- -- Caleb Case <ccase@tresys.com>  Fri, 11 Sep 2009 14:26:09 -0400
-
-policycoreutils (2.0.69-2ubuntu1) karmic; urgency=low
-
-  * Merge from debian unstable, remaining changes: LP: #400111
-    - load_policy/Makefile, debian/local.mk: move load_policy to /sbin
-      ensuring it is available during early boot.
-    - restorecond/restorecond.conf: adding more files from the /var/run
-      pseudo fs.
-    - debian/postinst: move restorecon to a higher startup level.
-
- -- Bhavani Shankar <right2bhavi@gmail.com>  Thu, 20 Aug 2009 19:55:18 +0530
-
 policycoreutils (2.0.69-2) unstable; urgency=low
 
   * [7f346a4]: [topic--restorecond-init-script] Fix headers in script
@@ -326,17 +451,6 @@ policycoreutils (2.0.62-1) unstable; urgency=low
 
  -- Manoj Srivastava <srivasta@debian.org>  Mon, 15 Jun 2009 16:24:38 -0500
 
-policycoreutils (2.0.55-1ubuntu1) karmic; urgency=low
-
-  * Merge from debian unstable, remaining changes:
-    - load_policy/Makefile, debian/local.mk: move load_policy to /sbin
-      ensuring it is available during early boot.
-    - restorecond/restorecond.conf: adding more files from the /var/run
-      pseudo fs.
-    - debian/postinst: move restorecon to a higher startup level.
-
- -- Kees Cook <kees@ubuntu.com>  Sun, 10 May 2009 16:07:46 -0700
-
 policycoreutils (2.0.55-1) unstable; urgency=low
 
   * New upstream release
@@ -355,19 +469,6 @@ policycoreutils (2.0.55-1) unstable; urgency=low
     licensed under GPL-2)
 
  -- Manoj Srivastava <srivasta@debian.org>  Thu, 12 Feb 2009 22:52:54 -0600
-
-policycoreutils (2.0.49-8ubuntu2) jaunty; urgency=low
-
-  * Moving restorecon to a higher startup level.
-  * Adding files from the /var/run pseudo fs (LP: #352756).
-
- -- Caleb Case <ccase@tresys.com>  Tue, 31 Mar 2009 11:30:42 -0400
-
-policycoreutils (2.0.49-8ubuntu1) jaunty; urgency=low
-
-  * Move load_policy to /sbin ensuring it is available at boot (LP: #126415).
-
- -- Caleb Case <ccase@tresys.com>  Tue, 17 Mar 2009 11:57:03 -0400
 
 policycoreutils (2.0.49-8) unstable; urgency=high
 
@@ -1343,4 +1444,3 @@ policycoreutils (1.0-1) unstable; urgency=low
   * Initial version.
 
  -- Colin Walters <walters@debian.org>  Thu,  3 Jul 2003 17:16:19 -0400
-

@@ -17,7 +17,7 @@ ifeq "$(ARCH)" "i386"
 endif
 endif
 endif
-LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH)
+
 
 CFLAGS ?= -Wall
 override CFLAGS += -I../src -D_GNU_SOURCE

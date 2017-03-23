@@ -13,11 +13,11 @@ ifeq "$(ARCH)" "i386"
 endif
 endif
 endif
-LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH)
 # Installation directories.
 PREFIX  ?= $(DESTDIR)/usr
 SBINDIR ?= $(DESTDIR)/sbin
-INITDIR ?= $(DESTDIR)/etc/init.d
+INITDIR ?= $(DESTDIR)/etc/rc.d/init.d
+SYSTEMDDIR ?= $(DESTDIR)/usr/lib/systemd
 
 PROG_SRC=mcstrans.c  mcscolor.c  mcstransd.c  mls_level.c
 PROG_OBJS= $(patsubst %.c,%.o,$(PROG_SRC))
@@ -39,6 +39,8 @@ install: all
 	install -m 755 $(PROG) $(SBINDIR)
 	test -d $(INITDIR) || install -m 755 -d $(INITDIR)
 	install -m 755 $(INITSCRIPT).init $(INITDIR)/$(INITSCRIPT)
+	test -d $(SYSTEMDDIR)/system || install -m 755 -d $(SYSTEMDDIR)/system
+	install -m 644 mcstrans.service $(SYSTEMDDIR)/system/
 
 clean: 
 	-rm -f $(OBJS) $(LOBJS) $(TARGET) $(PROG) $(PROG_OBJS) *~ \#*
