@@ -2,6 +2,7 @@
 # Makefile for the PO files (translation) catalog
 #
 
+PREFIX ?= /usr
 TOP	 = ../..
 
 # What is this package?
@@ -12,7 +13,7 @@ INSTALL_DATA	= $(INSTALL) -m 644
 INSTALL_DIR	= /usr/bin/install -d
 
 # destination directory
-INSTALL_NLS_DIR = $(DESTDIR)/usr/share/locale
+INSTALL_NLS_DIR = $(PREFIX)/share/locale
 
 # PO catalog handling
 MSGMERGE	= msgmerge
@@ -20,8 +21,16 @@ MSGMERGE_FLAGS	= -q
 XGETTEXT	= xgettext --default-domain=$(NLSPACKAGE)
 MSGFMT		= msgfmt
 
-# What do we need to do
-POFILES		= $(wildcard *.po)
+# All possible linguas
+PO_LINGUAS := $(sort $(patsubst %.po,%,$(wildcard *.po)))
+
+# Only the files matching what the user has set in LINGUAS
+USER_LINGUAS := $(filter $(patsubst %,%%,$(LINGUAS)),$(PO_LINGUAS))
+
+# if no valid LINGUAS, build all languages
+USE_LINGUAS := $(if $(USER_LINGUAS),$(USER_LINGUAS),$(PO_LINGUAS))
+
+POFILES		= $(patsubst %,%.po,$(USE_LINGUAS))
 MOFILES		= $(patsubst %.po,%.mo,$(POFILES))
 POTFILES = \
 	../run_init/open_init_pty.c \
@@ -120,8 +129,8 @@ clean:
 install: $(MOFILES)
 	@for n in $(MOFILES); do \
 	    l=`basename $$n .mo`; \
-	    $(INSTALL_DIR) $(INSTALL_NLS_DIR)/$$l/LC_MESSAGES; \
-	    $(INSTALL_DATA) --verbose $$n $(INSTALL_NLS_DIR)/$$l/LC_MESSAGES/$(NLSPACKAGE).mo; \
+	    $(INSTALL_DIR) $(DESTDIR)$(INSTALL_NLS_DIR)/$$l/LC_MESSAGES; \
+	    $(INSTALL_DATA) --verbose $$n $(DESTDIR)$(INSTALL_NLS_DIR)/$$l/LC_MESSAGES/$(NLSPACKAGE).mo; \
 	done
 
 %.mo: %.po

@@ -6,6 +6,14 @@
 #include "restore.h"
 #include <glob.h>
 
+#ifndef GLOB_BRACE
+#define GLOB_BRACE 0
+#endif
+
+#ifndef GLOB_TILDE
+#define GLOB_TILDE 0
+#endif
+
 char **exclude_list;
 int exclude_count;
 
@@ -35,7 +43,8 @@ void restore_init(struct restore_opts *opts)
 			   r_opts->recurse | r_opts->userealpath |
 			   r_opts->xdev | r_opts->abort_on_error |
 			   r_opts->syslog_changes | r_opts->log_matches |
-			   r_opts->ignore_noent | r_opts->ignore_mounts;
+			   r_opts->ignore_noent | r_opts->ignore_mounts |
+			   r_opts->mass_relabel;
 
 	/* Use setfiles, restorecon and restorecond own handles */
 	selinux_restorecon_set_sehandle(r_opts->hnd);

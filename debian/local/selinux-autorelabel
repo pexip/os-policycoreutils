@@ -29,7 +29,7 @@ relabel_selinux() {
 
 	FORCE=`cat /.autorelabel`
 	[ -x "/sbin/quotaoff" ] && /sbin/quotaoff -aug
-	/sbin/fixfiles $FORCE restore > /dev/null 2>&1
+	/sbin/fixfiles $FORCE restore
     fi
     rm -f  /.autorelabel
     [ -x /usr/lib/dracut/dracut-initramfs-restore ] && /usr/lib/dracut/dracut-initramfs-restore
