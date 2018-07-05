@@ -20,7 +20,7 @@ by semodule_package.  Conventionally, these files have a .pp suffix
 .B \-R, \-\-reload
 force a reload of policy
 .TP
-.B \-B, \-\-build		
+.B \-B, \-\-build
 force a rebuild of policy (also reloads unless \-n is used)
 .TP
 .B \-D, \-\-disable_dontaudit
@@ -30,27 +30,40 @@ Temporarily remove dontaudits from policy.  Reverts whenever policy is rebuilt
 install/replace a module package
 .TP
 .B  \-u,\-\-upgrade=MODULE_PKG
-upgrade an existing module package, or install if the module does not exist
+deprecated, alias for --install
 .TP
 .B  \-b,\-\-base=MODULE_PKG   
-install/replace base module package
-.TP
-.B  \-d,\-\-disable=MODULE_NAME
-disable existing module
-.TP
-.B  \-e,\-\-enable=MODULE_NAME
-enable existing module
-.TP
-.B \-p,\-\-path=ROOTPATH
-use an alternate root path
+deprecated, alias for --install
 .TP
 .B  \-r,\-\-remove=MODULE_NAME
 remove existing module
 .TP
-.B  \-l,\-\-list-modules      
+.B  \-l[KIND],\-\-list-modules[=KIND]
 display list of installed modules (other than base)
 .TP
-.B  \-s,\-\-store	   
+.B  \-E,\-\-extract=MODULE_PKG
+Extract a module from the store as an HLL or CIL file to the current directory.
+A module is extracted as HLL by default. The name of the module written is
+<module-name>.<lang_ext>
+.TP
+.B  KIND:
+.TP
+standard
+list highest priority, enabled, non-base modules
+.TP
+full
+list all modules
+.TP
+.B  \-X,\-\-priority=PRIORITY
+set priority for following operations (1-999)
+.TP
+.B  \-e,\-\-enabled=MODULE_NAME
+enable module
+.TP
+.B  \-d,\-\-disable=MODULE_NAME
+disable module
+.TP
+.B  \-s,\-\-store
 name of the store to operate on
 .TP
 .B  \-n,\-\-noreload,\-N
@@ -62,8 +75,25 @@ prints help message and quit
 .B \-P,\-\-preserve_tunables
 Preserve tunables in policy
 .TP
+.B \-C,\-\-ignore-module-cache
+Recompile CIL modules built from HLL files
+.TP
+.B \-p,\-\-path
+Use an alternate path for the policy root
+.TP
+.B \-S,\-\-store-path
+Use an alternate path for the policy store root
+.TP
 .B  \-v,\-\-verbose     
 be verbose
+.TP
+.B  \-c,\-\-cil
+Extract module as a CIL file. This only affects the \-\-extract option and
+only modules listed in \-\-extract after this option.
+.TP
+.B  \-H,\-\-hll
+Extract module as an HLL file. This only affects the \-\-extract option and
+only modules listed in \-\-extract after this option.
 
 .SH EXAMPLE
 .nf
@@ -81,6 +111,19 @@ $ semodule \-B
 $ semodule \-i *.pp
 # Install or replace all modules in the current directory.
 $ ls *.pp | grep \-Ev "base.pp|enableaudit.pp" | xargs /usr/sbin/semodule \-b base.pp \-i
+# Disable a module.
+$ semodule \-d alsa
+# Install a module at a specific priority.
+$ semodule \-X 100 \-i alsa.pp
+# List all modules.
+$ semodule \-\-list=full
+# Set an alternate path for the policy root
+$ semodule \-B \-p "/tmp"
+# Set an alternate path for the policy store root
+$ semodule \-B \-S "/tmp/var/lib/selinux"
+# Write the HLL version of puppet and the CIL version of wireshark
+# modules at priority 400 to the current working directory
+$ semodule \-X 400 \-\-hll \-E puppet \-\-cil \-E wireshark
 .fi
 
 .SH SEE ALSO

@@ -1,3 +1,110 @@
+2.6 2016-10-14
+	* setfiles: reverse the sense of -D option, from Stephen Smalley.
+	* setfiles ignore restorecon_xattr in git, from Nicolas Iooss.
+	* sandbox: Use dbus-run-session instead of dbus-launch when available, from Laurent Bigonville.
+	* setfiles: Utility to find security.restorecon_last entries, from Richard Haines.
+	* setfiles: Add option to stop setting the digest, from Richard Haines.
+	* hll/pp: Change warning for module name not matching filename to match new behavior, from Petr Lautrbach.
+	* Remove LDFLAGS from CFLAGS, from Nicolas Iooss.
+	* sepolicy: convert to setools4, from Jason Zaman.
+	* sandbox: create a new session for sandboxed processes, from Petr Lautrbach.
+	* sandbox: do not try to setup directories without -X or -M, from Petr Lautrbach.
+	* sandbox: do not run xmodmap in a new X session, from Petr Lautrbach.
+	* sandbox: Use GObject introspection binding instead of pygtk2, from Petr Lautrbach and Laurent Bigonville.
+	* sandbox: fix file labels on copied files, from Petr Lautrbach.
+	* sandbox: tests - close stdout of p1, from Petr Lautrbach.
+	* sandbox: tests - use sandbox from cwd, from Petr Lautrbach.
+	* audit2allow: tests should use local copy not system, from Jason Zaman.
+	* audit2allow: fix audit2why import from seobject, from Jason Zaman.
+	* audit2allow: remove audit2why so that it gets symlinked, from Jason Zaman.
+	* semanage: fix man page and help message for import option, from AJ.
+	* semanage: fix error message for fcontext -m, from Miroslav Vadkerti.
+	* semanage: Fix semanage fcontext -D, from Stephen Smalley.
+	* semanage: Correct fcontext auditing, from Miroslav Vadkerti.
+	* semanage: Default serange to "s0" for port modify, from Miroslav Vadkerti.
+	* semanage: Use socket.getprotobyname for protocol, from Miroslav Vadkerti.
+	* restorecond: Modify to use selinux_restorecon, from Richard Haines.
+	* setfiles: Modify to use selinux_restorecon, from Richard Haines.
+	* semanage: fix modify action in node and interface, from Miroslav Vadkerti.
+	* fixfiles: Pass -n to restorecon for fixfiles check, from Petr Lautrbach.
+	* sepolicy: Check get_rpm_nvr_list() return value, from Vit Mojzis.
+	* Don't use subprocess.getstatusoutput() in Python 2 code, from Petr Lautrbach.
+	* semanage: Add auditing of changes in records, from Miroslav Vadkerti.
+	* Improve compatibility with Python 3, from Jason Zaman.
+	* Remove unused 'q' from semodule getopt string, from Petr Lautrbach.
+	* Remove unused autoconf files from po/, from Petr Lautrbach.
+	* Remove duplicate, empty translation files, from Piotr Drąg.
+	* open_init_pty: Do not error on EINTR, from Jason Zaman.
+	* Fix [-s STORE] typos in semanage, from Petr Lautrbach.
+	* Update sandbox types in sandbox manual, from Michael De La Rue.
+	* Fix typos in semanage manpages, from Philipp Gesang.
+	* Fix the documentation of -l,--list for semodule, from Petr Lautrbach.
+	* Minor fix in a French translation, from Laurent Bigonville.
+	* Fix the extract example in semodule.8, from Petr Lautrbach.
+	* Update sandbox.8 man page, from Petr Lautrbach.
+	* Remove typos from chcat --help, from Petr Lautrbach.
+	* Fix multiple spelling errors, from Laurent Bigonville.
+	* hll/pp: Warn if module name different than output filename, from James Carter
+
+2.5 2016-02-23
+	* sepolicy: Do not overwrite CFLAGS, from Nicolas Iooss.
+	* sepolicy: Rename policy global variable conflict, from Nicolas Iooss.
+	* newrole: Add missing defined in #if, from Nicolas Iooss.
+	* newrole: Add description of missing parameter -p in newrole man page, from Lukas Vrabec.
+	* secon: Add missing descriptions for --*-key params in secon man page, from Lukas Vrabec
+	* semanage: List reserve_port_t in semanage port -l, from Petr Lautrbach.
+	* chcat: Add a fallback in case os.getlogin() returns nothing, from Laurent Bigonville.
+	* semanage: fix 'semanage permissions -l' subcommand, from Petr Lautrbach.
+	* semanage: replace string.join() with str.join(), from Petr Lautrbach.
+	* Man page warning fixes, from Ville Skyttä.
+	* sandbox: Fix sandbox to propagate specified MCS/MLS Security Level, from Miroslav Grepl.
+	* semanage: Require at least one argument for 'semanage permissive -d', from Petr Lautrbach.
+	* sepolicy: Improve sepolicy command line interface, from Petr Lautrbach.
+	* audit2allow/why: ignore setlocale errors, from Petr Lautrbach.
+	* semodule: Add --extract/-E, --cil/-c, and --hll/-H to extract modules, from Yuli Khodorkovskiy.
+	* audit2allow: Comment constraint rules in output, from Miroslav Grepl via Petr Lautrbach.
+	* Fix PEP8 issues, from Jason Zaman.
+	* semanage: fix moduleRecords deleteall method, from Stephen Smalley.
+	* Improve compatibility with Python 3, from Michal Srb.
+	* semanage: Set self.sename to sename after calling semanage_seuser_set_sename(), from Laurent Bigonville.
+	* semanage: Fix typo in semanage args for minimium policy store, from Petr Lautrbach.
+	* sepolicy: Only invoke RPM on RPM-enabled Linux distributions, from Sven Vermeulen.
+	* mcstransd: don't reinvent getpeercon, from Stephen Smalley.
+	* setfiles/restorecon: fix -r/-R option, from Petr Lautrbach.
+	* org.selinux.policy: Require auth_admin_keep for all actions, from Stephen Smalley.
+	* hll: Move core functions of pp to libsepol, from James Carter
+	* run_init: Use a ring buffer in open_init_pty, from Jason Zaman.
+	* run_init: fix open_init_pty availability check, from Nicolas Iooss.
+	* Widen Xen IOMEM context entries, from Daniel De Graaf.
+	* Fix -Wformat errors with gcc-5.0.0, from Petr Lautrbach.
+	* Fixed typo/grammatical error, from Christopher Peterson.
+	* Fix typo in semanage-port man page, from Andrew Spiers.
+
+2.4 2015-02-02
+	* Fix bugs found by hardened gcc flags, from Nicolas Iooss.
+	* Improve support for building with different versions of python from
+	  Nicolas Iooss.
+	* Ensure XDG_RUNTIME_DIR is passed through to the sandbox in seunshare,
+	  from Dan Walsh
+	* Remove cgroups from sandbox, from Dan Walsh
+	* Try to use setcurrent before setexec in seunshare, from Andy Lutomirski
+	* Stop using the now deprecated flask.h and av_permissions.h, from Stephen Smalley
+	* Add a store root path in semodule, from Yuli Khodorkovskiy
+	* Add a flag to ignore cached CIL files and recompile HLL modules, from
+	  Yuli Khodorkovskiy
+	* Add and install HLL compiler for policy packages to CIL. The compiler is
+	  installed in /var/libexec/selinux/hll/ by default, from Steve Lawrence
+	* Fixes to pp compiler to better support roles and type attributes, from
+	  Yuli Khodorkovskiy
+	* Deprecate base/upgrade/version in semodule. Calling these commands will
+	  now call --install on the backend, from Yuli Khodorkovskiy
+	* Add ability to install modules with a specified priority, from Caleb
+	  Case
+	* Use /tmp for permissive module creation, by Caleb Case
+	* Update semanage to use new source policy infrastructure, from Jason Dana
+	* Add RuntimeDirectory to mcstrans systemd unit file, from Laurent
+	  Bigonville
+
 2.3 2014-05-06
 	* Add -P semodule option to man page from Dan Walsh.
 	* selinux_current_policy_path will return none on a disabled SELinux system from Dan Walsh.

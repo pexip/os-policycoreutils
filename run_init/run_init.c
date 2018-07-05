@@ -230,7 +230,7 @@ int authenticate_via_shadow_passwd(const struct passwd *p_passwd_line)
  * return:	0 When success
  *		-1 When failure
  */
-int authenticate_user()
+int authenticate_user(void)
 {
 
 #define INITLEN 255
@@ -406,7 +406,7 @@ int main(int argc, char *argv[])
 			new_context);
 		exit(-1);
 	}
-	if (! access("/usr/sbin/open_init_pty", X_OK)) {
+	if (access("/usr/sbin/open_init_pty", X_OK) != 0) {
 		if (execvp(argv[1], argv + 1)) {
 			perror("execvp");
 			exit(-1);
