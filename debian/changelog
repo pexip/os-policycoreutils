@@ -1,3 +1,9 @@
+policycoreutils (2.3-1pexip2) pexip; urgency=low
+
+  * Reinstate dh_systemd
+
+ -- John-Mark Bell <jmb@pexip.com>  Mon, 23 Jul 2018 16:59:06 +0100
+
 policycoreutils (2.3-1pexip1) pexip; urgency=low
 
   * Migrate to Jessie
