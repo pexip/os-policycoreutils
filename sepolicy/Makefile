@@ -1,3 +1,5 @@
+PYTHON ?= python
+
 # Installation directories.
 PREFIX ?= $(DESTDIR)/usr
 SYSCONFDIR ?= $(DESTDIR)/etc/sysconfig
@@ -7,16 +9,16 @@ SBINDIR ?= $(PREFIX)/sbin
 DATADIR ?= $(PREFIX)/share
 MANDIR ?= $(PREFIX)/share/man
 LOCALEDIR ?= /usr/share/locale
-PYTHON ?= /usr/bin/python
 BASHCOMPLETIONDIR ?= $(DESTDIR)/usr/share/bash-completion/completions
 SHAREDIR ?= $(PREFIX)/share/sandbox
-override CFLAGS = -I$(PREFIX)/include -DPACKAGE="policycoreutils" -Wall -Werror -Wextra -W  -DSHARED -shared
+CFLAGS ?= -Wall -Werror -Wextra -W
+override CFLAGS += -I$(PREFIX)/include -DPACKAGE="policycoreutils" -DSHARED -shared
 
 BASHCOMPLETIONS=sepolicy-bash-completion.sh
 
 all: python-build
 
-python-build: info.c search.c common.h policy.h policy.c
+python-build:
 	$(PYTHON) setup.py build
 
 clean:
@@ -27,7 +29,7 @@ sepolgen:
 	ln -sf sepolicy sepolgen
 
 test:
-	@python test_sepolicy.py -v
+	@$(PYTHON) test_sepolicy.py -v
 
 install:
 	$(PYTHON) setup.py install `test -n "$(DESTDIR)" && echo --root $(DESTDIR)`

@@ -1,0 +1,3 @@
+# /usr/bin/sepolicy is installed by the -dev package against which we have a
+# direct dependency
+policycoreutils-gui: desktop-command-not-in-package usr/share/applications/sepolicy.desktop usr/bin/sepolicy

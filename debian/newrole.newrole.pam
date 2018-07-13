@@ -1,0 +1,6 @@
+#%PAM-1.0
+
+@include common-auth
+@include common-account
+@include common-session
+session  required pam_namespace.so unmnt_remnt no_unmount_on_close

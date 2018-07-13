@@ -1,0 +1,6 @@
+usr/bin/newrole
+usr/sbin/open_init_pty
+usr/sbin/run_init
+usr/share/man/man1/newrole.1
+usr/share/man/man8/open_init_pty.8
+usr/share/man/man8/run_init.8

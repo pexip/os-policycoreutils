@@ -1,58 +1,41 @@
 Source: policycoreutils
-VCS-Git: git://anonscm.debian.org/selinux/policycoreutils.git
-VCS-Browser: http://anonscm.debian.org/gitweb/?p=selinux/policycoreutils.git;a=summary
+VCS-Git: https://anonscm.debian.org/git/selinux/policycoreutils.git
+VCS-Browser: https://anonscm.debian.org/gitweb/?p=selinux/policycoreutils.git;a=summary
 Priority: optional
 Section: utils
 Maintainer: Pexip AS <packaging@pexip.com>
 XSBC-Pexip-Original-Maintainer: Debian SELinux maintainers <selinux-devel@lists.alioth.debian.org>
 XSBC-Pexip-Original-Uploaders: Manoj Srivastava <srivasta@debian.org>,
            Russell Coker <russell@coker.com.au>
-Standards-Version: 3.9.5
+Standards-Version: 3.9.8
 Build-Depends: debhelper (>= 9),
-               dpkg-dev (>= 1.16.0),
+               dh-python,
                dh-systemd (>= 1.4),
+               dpkg-dev (>= 1.16.0),
                file,
                gawk,
                gettext,
-               libapol-dev,
-               libqpol-dev,
                libaudit-dev,
                libcap-dev,
                libcap-ng-dev,
-               libcgroup-dev,
                libdbus-1-dev,
                libdbus-glib-1-dev,
                libglib2.0-dev,
                libpam0g-dev,
                libpcre3-dev,
-               libselinux1-dev (>= 2.3),
-               libsemanage1-dev (>= 2.3),
-               libsepol1-dev (>= 2.3),
-               python-dev (>= 2.6.6-3~),
-               python-sepolgen (>= 1.1.8)
-X-Python-Version: >= 2.5
+               libselinux1-dev (>= 2.6),
+               libsemanage1-dev (>= 2.6),
+               libsepol1-dev (>= 2.6),
+               python3-dev (>= 3.2),
+               python3-sepolgen (>= 2.6)
+X-Python3-Version: >= 3.2
 Homepage: http://userspace.selinuxproject.org/
 XS-Pexip-Upstream: http://ftp.debian.org/debian/ stretch
 
 Package: policycoreutils
 Architecture: linux-any
-Depends: lsb-base (>= 3.2-13),
-         psmisc,
-         python-ipy,
-         python-selinux (>= 2.3),
-         python-semanage (>= 2.3),
-         python-sepolgen (>= 1.2.1),
-         python-setools (>= 3.3.7-2),
-         python-sepolicy (= ${binary:Version}),
-         selinux-utils,
-         ${misc:Depends},
-         ${python:Depends},
-         ${shlibs:Depends}
-Conflicts: mcstrans
-Provides: mcstrans
-Replaces: mcstrans
-Recommends: python-audit, selinux-policy-default
-Suggests: selinux-policy-dev
+Depends: lsb-base (>= 3.0-6), selinux-utils, ${misc:Depends}, ${shlibs:Depends}
+Breaks: selinux-basics (<< 0.5.3~), findutils (<< 4.5.7)
 Pre-Depends: ${misc:Pre-Depends}
 Description: SELinux core policy utilities
  Security-enhanced Linux is a patch of the Linux® kernel and a number
@@ -67,27 +50,205 @@ Description: SELinux core policy utilities
  .
  This package contains the core policy utilities that are required
  for basic operation of an SELinux system.  These utilities include
- load_policy to load policies, setfiles to label filesystems, newrole
- to switch roles, run_init to run /etc/init.d scripts in the proper
- context, and restorecond to restore contexts of files that often get the
- wrong context.
- .
- It also includes the mcstransd to map a maching readable sensitivity label to
- a human readable form.  The sensitivity label is comprised of a sensitivity
- level (always s0 for MCS and anything from s0 to s15 for MLS) and a set of
- categories.  A ranged sensitivity label will have a low level and a high level
- where the high level will dominate the low level.  Categories are numbered
- from c0 to c1023.  Names such as s0 and c1023 and not easily readable by
- humans, so mcstransd translated them to human readable labels such as
- SystemLow and SystemHigh.
+ load_policy to load policies, setfiles to label filesystems.
 
-Package: python-sepolicy
+Package: policycoreutils-python-utils
 Architecture: linux-any
-Depends: ${misc:Depends},
-         ${python:Depends},
-         ${shlibs:Depends},
-         python-selinux (>= 2.3),
-         python-sepolgen (>= 1.2.1)
+Depends: policycoreutils (= ${binary:Version}),
+         python3-audit,
+         python3-ipy,
+         python3-selinux (>= 2.6),
+         python3-semanage (>= 2.6),
+         python3-sepolgen (>= 2.6),
+         python3-sepolicy (= ${binary:Version}),
+         selinux-utils,
+         ${misc:Depends},
+         ${python3:Depends},
+         ${shlibs:Depends}
+Breaks: policycoreutils (<< 2.4)
+Replaces: policycoreutils (<< 2.4)
+Pre-Depends: ${misc:Pre-Depends}
+Description: SELinux core policy utilities (Python utilities)
+ Security-enhanced Linux is a patch of the Linux® kernel and a number
+ of utilities with enhanced security functionality designed to add
+ mandatory access controls to Linux.  The Security-enhanced Linux
+ kernel contains new architectural components originally developed to
+ improve the security of the Flask operating system. These
+ architectural components provide general support for the enforcement
+ of many kinds of mandatory access control policies, including those
+ based on the concepts of Type Enforcement®, Role-based Access Control,
+ and Multi-level Security.
+ .
+ This package contains the policycoreutils written in Python like semanage,
+ audit2why, audit2allow or chcat.
+
+Package: python3-sepolicy
+Architecture: linux-any
+Depends: python3-selinux (>= 2.6),
+         python3-sepolgen (>= 2.6),
+         ${misc:Depends},
+         ${python3:Depends},
+         ${shlibs:Depends}
 Section: python
 Description: Python binding for SELinux Policy Analyses
  This package contains a Python binding for SELinux Policy Analyses.
+
+Package: policycoreutils-gui
+Architecture: all
+Priority: extra
+Depends: gir1.2-glib-2.0,
+         gir1.2-gtk-3.0,
+         policycoreutils (>= 2.6),
+         policycoreutils-dev,
+         policykit-1,
+         python3-dbus,
+         python3-gi,
+#         python-glade2,
+#         python-gnome2,
+#         python-gobject-2,
+#         python-gtk2,
+         python3-selinux (>= 2.6),
+         python3-sepolicy (>= 2.6),
+         python3-slip-dbus,
+         ${misc:Depends},
+         ${python3:Depends}
+Description: SELinux core policy utilities (graphical utilities)
+ Security-enhanced Linux is a patch of the Linux® kernel and a number
+ of utilities with enhanced security functionality designed to add
+ mandatory access controls to Linux.  The Security-enhanced Linux
+ kernel contains new architectural components originally developed to
+ improve the security of the Flask operating system. These
+ architectural components provide general support for the enforcement
+ of many kinds of mandatory access control policies, including those
+ based on the concepts of Type Enforcement®, Role-based Access Control,
+ and Multi-level Security.
+ .
+ This package contains the system-config-selinux and the selinux-polgengui
+ utilities.
+
+Package: policycoreutils-dev
+Architecture: linux-any
+Section: devel
+Depends: policycoreutils (= ${binary:Version}),
+         python3-selinux (>= 2.6),
+         python3-sepolgen (>= 2.6),
+         python3-sepolicy (= ${binary:Version}),
+         ${misc:Depends},
+         ${python3:Depends},
+         ${shlibs:Depends}
+Breaks: policycoreutils (<< 2.4)
+Replaces: policycoreutils (<< 2.4)
+Description: SELinux core policy utilities (development utilities)
+ Security-enhanced Linux is a patch of the Linux® kernel and a number
+ of utilities with enhanced security functionality designed to add
+ mandatory access controls to Linux.  The Security-enhanced Linux
+ kernel contains new architectural components originally developed to
+ improve the security of the Flask operating system. These
+ architectural components provide general support for the enforcement
+ of many kinds of mandatory access control policies, including those
+ based on the concepts of Type Enforcement®, Role-based Access Control,
+ and Multi-level Security.
+ .
+ This package contains the management tools used to develop policy in an
+ SELinux environment.
+
+Package: policycoreutils-sandbox
+Architecture: linux-any
+Priority: extra
+Depends: dbus (>= 1.8),
+         gir1.2-gtk-3.0,
+         libcap2-bin,
+         policycoreutils,
+         python3,
+         python3-gi,
+         x11-xserver-utils,
+         xserver-xephyr,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Recommends: openbox | x-window-manager
+Description: SELinux core policy utilities (graphical sandboxes)
+ Security-enhanced Linux is a patch of the Linux® kernel and a number
+ of utilities with enhanced security functionality designed to add
+ mandatory access controls to Linux.  The Security-enhanced Linux
+ kernel contains new architectural components originally developed to
+ improve the security of the Flask operating system. These
+ architectural components provide general support for the enforcement
+ of many kinds of mandatory access control policies, including those
+ based on the concepts of Type Enforcement®, Role-based Access Control,
+ and Multi-level Security.
+ .
+ This package contains the scripts to create graphical sandboxes.
+ .
+ This package requires an additional custom policy that is not present in
+ Debian.
+
+Package: restorecond
+Architecture: linux-any
+Depends: lsb-base (>= 3.0-6), selinux-utils, ${misc:Depends}, ${shlibs:Depends}
+Breaks: policycoreutils (<< 2.4)
+Replaces: policycoreutils (<< 2.4)
+Description: SELinux core policy utilities (restorecond utilities)
+ Security-enhanced Linux is a patch of the Linux® kernel and a number
+ of utilities with enhanced security functionality designed to add
+ mandatory access controls to Linux.  The Security-enhanced Linux
+ kernel contains new architectural components originally developed to
+ improve the security of the Flask operating system. These
+ architectural components provide general support for the enforcement
+ of many kinds of mandatory access control policies, including those
+ based on the concepts of Type Enforcement®, Role-based Access Control,
+ and Multi-level Security.
+ .
+ This package contains restorecond to restore contexts of files that often get
+ the wrong context.
+
+Package: mcstrans
+Architecture: linux-any
+Priority: extra
+Depends: lsb-base (>= 3.0-6), selinux-utils, ${misc:Depends}, ${shlibs:Depends}
+Breaks: policycoreutils (<< 2.4)
+Replaces: policycoreutils (<< 2.4)
+Description: SELinux core policy utilities (mcstrans utilities)
+ Security-enhanced Linux is a patch of the Linux® kernel and a number
+ of utilities with enhanced security functionality designed to add
+ mandatory access controls to Linux.  The Security-enhanced Linux
+ kernel contains new architectural components originally developed to
+ improve the security of the Flask operating system. These
+ architectural components provide general support for the enforcement
+ of many kinds of mandatory access control policies, including those
+ based on the concepts of Type Enforcement®, Role-based Access Control,
+ and Multi-level Security.
+ .
+ This package contains mcstransd to map a machine readable sensitivity label to
+ a human readable form.  The sensitivity label is comprised of a sensitivity
+ level (always s0 for MCS and anything from s0 to s15 for MLS) and a set of
+ categories.  A ranged sensitivity label will have a low level and a high level
+ where the high level will dominate the low level.  Categories are numbered from
+ c0 to c1023.  Names such as s0 and c1023 and not easily readable by humans, so
+ mcstransd translated them to human readable labels such as SystemLow and
+ SystemHigh.
+
+Package: newrole
+Architecture: linux-any
+Priority: extra
+Depends: libcap2-bin,
+         policycoreutils (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Breaks: policycoreutils (<< 2.4)
+Replaces: policycoreutils (<< 2.4)
+Description: SELinux core policy utilities (newrole application for RBAC/MLS)
+ Security-enhanced Linux is a patch of the Linux® kernel and a number
+ of utilities with enhanced security functionality designed to add
+ mandatory access controls to Linux.  The Security-enhanced Linux
+ kernel contains new architectural components originally developed to
+ improve the security of the Flask operating system. These
+ architectural components provide general support for the enforcement
+ of many kinds of mandatory access control policies, including those
+ based on the concepts of Type Enforcement®, Role-based Access Control,
+ and Multi-level Security.
+ .
+ RBAC/MLS policy machines require newrole as a way of changing the role or
+ level of a logged in user.
+ .
+ This package contains newrole to switch roles, run_init to run /etc/init.d
+ scripts in the proper context.

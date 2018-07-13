@@ -14,7 +14,6 @@
 #include <glob.h>
 #include <pwd.h>
 #include <sched.h>
-#include <libcgroup.h>
 #include <string.h>
 #include <stdio.h>
 #include <regex.h>
@@ -53,7 +52,7 @@
 
 #define BUF_SIZE 1024
 #define DEFAULT_PATH "/usr/bin:/bin"
-#define USAGE_STRING _("USAGE: seunshare [ -v ] [ -C ] [ -c ] [ -k ] [ -t tmpdir ] [ -h homedir ] [ -Z CONTEXT ] -- executable [args] ")
+#define USAGE_STRING _("USAGE: seunshare [ -v ] [ -C ] [ -k ] [ -t tmpdir ] [ -h homedir ] [ -Z CONTEXT ] -- executable [args] ")
 
 static int verbose = 0;
 static int child = 0;
@@ -63,7 +62,7 @@ static capng_select_t cap_set = CAPNG_SELECT_CAPS;
 /**
  * This function will drop all capabilities.
  */
-static int drop_caps()
+static int drop_caps(void)
 {
 	if (capng_have_capabilities(cap_set) == CAPNG_NONE)
 		return 0;
@@ -139,19 +138,19 @@ static int set_signal_handles(void)
  * TODO: avoid system() and use exec*() instead
  */
 static int spawn_command(const char *cmd, uid_t uid){
-	int child;
+	int childpid;
 	int status = -1;
 
 	if (verbose > 1)
 		printf("spawn_command: %s\n", cmd);
 
-	child = fork();
-	if (child == -1) {
+	childpid = fork();
+	if (childpid == -1) {
 		perror(_("Unable to fork"));
 		return status;
 	}
 
-	if (child == 0) {
+	if (childpid == 0) {
 		if (drop_privs(uid) != 0) exit(-1);
 
 		status = system(cmd);
@@ -159,7 +158,7 @@ static int spawn_command(const char *cmd, uid_t uid){
 		exit(status);
 	}
 
-	waitpid(child, &status, 0);
+	waitpid(childpid, &status, 0);
 	status_to_retval(status, status);
 	return status;
 }
@@ -288,213 +287,6 @@ static int seunshare_mount(const char *src, const char *dst, struct stat *src_st
 
 	return 0;
 
-}
-
-/**
- * Error logging used by cgroups code.
- */
-static int sandbox_error(const char *string)
-{
-	fprintf(stderr, "%s", string);
-	syslog(LOG_AUTHPRIV | LOG_ALERT, "%s", string);
-	exit(-1);
-}
-
-/**
- * Regular expression match.
- */
-static int match(const char *string, char *pattern)
-{
-	int status;
-	regex_t re;
-	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
-		return 0;
-	}
-	status = regexec(&re, string, (size_t)0, NULL, 0);
-	regfree(&re);
-	if (status != 0) {
-		return 0;
-	}
-	return 1;
-}
-
-/**
- * Apply cgroups settings from the /etc/sysconfig/sandbox config file.
- */
-static int setup_cgroups()
-{
-	char *cpus = NULL;	/* which CPUs to use */
-	char *cgroupname = NULL;/* name for the cgroup */
-	char *mem = NULL;	/* string for memory amount to pass to cgroup */
-	int64_t memusage = 0;	/* amount of memory to use max (percent) */
-	int cpupercentage = 0;  /* what percentage of cpu to allow usage */
-	FILE* fp;
-	char buf[BUF_SIZE];
-	char *tok = NULL;
-	int rc = -1;
-	char *str = NULL;
-	const char* fname = "/etc/sysconfig/sandbox";
-
-	if ((fp = fopen(fname, "rt")) == NULL) {
-		fprintf(stderr, "Error opening sandbox config file.");
-		return rc;
-	}
-	while(fgets(buf, BUF_SIZE, fp) != NULL) {
-		/* Skip comments */
-		if (buf[0] == '#') continue;
-
-		/* Copy the string, ignoring whitespace */
-		int len = strlen(buf);
-		free(str);
-		str = malloc((len + 1) * sizeof(char));
-		if (!str)
-			goto err;
-
-		int ind = 0;
-		int i;
-		for (i = 0; i < len; i++) {
-			char cur = buf[i];
-			if (cur != ' ' && cur != '\t') {
-				str[ind] = cur;
-				ind++;
-			}
-		}
-		str[ind] = '\0';
-
-		tok = strtok(str, "=\n");
-		if (tok != NULL) {
-			if (!strcmp(tok, "CPUAFFINITY")) {
-				tok = strtok(NULL, "=\n");
-				cpus = strdup(tok);
-				if (!strcmp(cpus, "ALL")) {
-					free(cpus);
-					cpus = NULL;
-				}
-			} else if (!strcmp(tok, "MEMUSAGE")) {
-				tok = strtok(NULL, "=\n");
-				if (match(tok, "^[0-9]+[kKmMgG%]")) {
-					char *ind = strchr(tok, '%');
-					if (ind != NULL) {
-						*ind = '\0';;
-						memusage = atoi(tok);
-					} else {
-						mem = strdup(tok);
-					}
-				} else {
-					fprintf(stderr, "Error parsing config file.");
-					goto err;
-				}
-
-			} else if (!strcmp(tok, "CPUUSAGE")) {
-				tok = strtok(NULL, "=\n");
-				if (match(tok, "^[0-9]+\%")) {
-					char* ind = strchr(tok, '%');
-					*ind = '\0';
-					cpupercentage = atoi(tok);
-				} else {
-					fprintf(stderr, "Error parsing config file.");
-					goto err;
-				}
-			} else if (!strcmp(tok, "NAME")) {
-				tok = strtok(NULL, "=\n");
-				cgroupname = strdup(tok);
-			} else {
-				continue;
-			}
-		}
-
-	}
-	if (mem == NULL) {
-		long phypz = sysconf(_SC_PHYS_PAGES);
-		long psize = sysconf(_SC_PAGE_SIZE);
-		memusage = phypz * psize * (float) memusage / 100.0;
-	}
-
-	cgroup_init();
-
-	int64_t current_runtime = 0;
-	int64_t current_period = 0 ;
-	int64_t current_mem = 0;
-	char *curr_cpu_path = NULL;
-	char *curr_mem_path = NULL;
-	int ret  = cgroup_get_current_controller_path(getpid(), "cpu", &curr_cpu_path);
-	if (ret) {
-		sandbox_error("Error while trying to get current controller path.\n");
-	} else {
-		struct cgroup *curr = cgroup_new_cgroup(curr_cpu_path);
-		cgroup_get_cgroup(curr);
-		cgroup_get_value_int64(cgroup_get_controller(curr, "cpu"), "cpu.rt_runtime_us", &current_runtime);
-		cgroup_get_value_int64(cgroup_get_controller(curr, "cpu"), "cpu.rt_period_us", &current_period);
-	}
-
-	ret  = cgroup_get_current_controller_path(getpid(), "memory", &curr_mem_path);
-	if (ret) {
-		sandbox_error("Error while trying to get current controller path.\n");
-	} else {
-		struct cgroup *curr = cgroup_new_cgroup(curr_mem_path);
-		cgroup_get_cgroup(curr);
-		cgroup_get_value_int64(cgroup_get_controller(curr, "memory"), "memory.limit_in_bytes", &current_mem);
-	}
-
-	if (((float) cpupercentage)  / 100.0> (float)current_runtime / (float) current_period) {
-		sandbox_error("CPU usage restricted!\n");
-		goto err;
-	}
-
-	if (mem == NULL) {
-		if (memusage > current_mem) {
-			sandbox_error("Attempting to use more memory than allowed!");
-			goto err;
-		}
-	}
-
-	long nprocs = sysconf(_SC_NPROCESSORS_ONLN);
-
-	struct sched_param sp;
-	sp.sched_priority = sched_get_priority_min(SCHED_FIFO);
-	sched_setscheduler(getpid(), SCHED_FIFO, &sp);
-	struct cgroup *sandbox_group = cgroup_new_cgroup(cgroupname);
-	cgroup_add_controller(sandbox_group, "memory");
-	cgroup_add_controller(sandbox_group, "cpu");
-
-	if (mem == NULL) {
-		if (memusage > 0) {
-			cgroup_set_value_uint64(cgroup_get_controller(sandbox_group, "memory"), "memory.limit_in_bytes", memusage);
-		}
-	} else {
-		cgroup_set_value_string(cgroup_get_controller(sandbox_group, "memory"), "memory.limit_in_bytes", mem);
-	}
-	if (cpupercentage > 0) {
-		cgroup_set_value_uint64(cgroup_get_controller(sandbox_group, "cpu"), "cpu.rt_runtime_us",
-					(float) cpupercentage / 100.0 * 60000);
-		cgroup_set_value_uint64(cgroup_get_controller(sandbox_group, "cpu"), "cpu.rt_period_us",60000 * nprocs);
-	}
-	if (cpus != NULL) {
-		cgroup_set_value_string(cgroup_get_controller(sandbox_group, "cpu"), "cgroup.procs",cpus);
-	}
-
-	uint64_t allocated_mem;
-	if (cgroup_get_value_uint64(cgroup_get_controller(sandbox_group, "memory"), "memory.limit_in_bytes", &allocated_mem) > current_mem) {
-		sandbox_error("Attempting to use more memory than allowed!\n");
-		goto err;
-	}
-
-	rc = cgroup_create_cgroup(sandbox_group, 1);
-	if (rc != 0) {
-		sandbox_error("Failed to create group.  Ensure that cgconfig service is running. \n");
-		goto err;
-	}
-
-	cgroup_attach_task(sandbox_group);
-
-	rc = 0;
-err:
-	fclose(fp);
-	free(str);
-	free(mem);
-	free(cgroupname);
-	free(cpus);
-	return rc;
 }
 
 /*
@@ -826,7 +618,6 @@ int main(int argc, char **argv) {
 	security_context_t execcon = NULL;
 
 	int clflag;		/* holds codes for command line flags */
-	int usecgroups = 0;
 	int kill_all = 0;
 
 	char *homedir_s = NULL;	/* homedir spec'd by user in argv[] */
@@ -843,7 +634,6 @@ int main(int argc, char **argv) {
 		{"tmpdir", 1, 0, 't'},
 		{"kill", 1, 0, 'k'},
 		{"verbose", 1, 0, 'v'},
-		{"cgroups", 1, 0, 'c'},
 		{"context", 1, 0, 'Z'},
 		{"capabilities", 1, 0, 'C'},
 		{NULL, 0, 0, 0}
@@ -892,9 +682,6 @@ int main(int argc, char **argv) {
 		case 'v':
 			verbose++;
 			break;
-		case 'c':
-			usecgroups = 1;
-			break;
 		case 'C':
 			cap_set = CAPNG_SELECT_CAPS;
 			break;
@@ -924,9 +711,6 @@ int main(int argc, char **argv) {
 
 	if (set_signal_handles())
 		return -1;
-
-	if (usecgroups && setup_cgroups() < 0)
-		return  -1;
 
 	/* set fsuid to ruid */
 	/* Changing fsuid is usually required when user-specified directory is
@@ -964,6 +748,7 @@ int main(int argc, char **argv) {
 	if (child == 0) {
 		char *display = NULL;
 		char *LANG = NULL;
+		char *RUNTIME_DIR = NULL;
 		int rc = -1;
 		char *resolved_path = NULL;
 
@@ -1014,6 +799,13 @@ int main(int argc, char **argv) {
 			}
 		}
 
+		if ((RUNTIME_DIR = getenv("XDG_RUNTIME_DIR")) != NULL) {
+			if ((RUNTIME_DIR = strdup(RUNTIME_DIR)) == NULL) {
+				perror(_("Out of memory"));
+				goto childerr;
+			}
+		}
+
 		if ((rc = clearenv()) != 0) {
 			perror(_("Failed to clear environment"));
 			goto childerr;
@@ -1022,6 +814,8 @@ int main(int argc, char **argv) {
 			rc |= setenv("DISPLAY", display, 1);
 		if (LANG)
 			rc |= setenv("LANG", LANG, 1);
+		if (RUNTIME_DIR)
+			rc |= setenv("XDG_RUNTIME_DIR", RUNTIME_DIR, 1);
 		rc |= setenv("HOME", pwd->pw_dir, 1);
 		rc |= setenv("SHELL", pwd->pw_shell, 1);
 		rc |= setenv("USER", pwd->pw_name, 1);
@@ -1032,23 +826,32 @@ int main(int argc, char **argv) {
 			goto childerr;
 		}
 
-		/* selinux context */
-		if (execcon && setexeccon(execcon) != 0) {
-			fprintf(stderr, _("Could not set exec context to %s. %s\n"), execcon, strerror(errno));
-			goto childerr;
-		}
-
 		if (chdir(pwd->pw_dir)) {
 			perror(_("Failed to change dir to homedir"));
 			goto childerr;
 		}
 		setsid();
+
+		/* selinux context */
+		if (execcon) {
+			/* try dyntransition, since no_new_privs can interfere
+			 * with setexeccon */
+			if (setcon(execcon) != 0) {
+				/* failed; fall back to setexeccon */
+				if (setexeccon(execcon) != 0) {
+					fprintf(stderr, _("Could not set exec context to %s. %s\n"), execcon, strerror(errno));
+					goto childerr;
+				}
+			}
+		}
+
 		execv(argv[optind], argv + optind);
 		fprintf(stderr, _("Failed to execute command %s: %s\n"), argv[optind], strerror(errno));
 childerr:
 		free(resolved_path);
 		free(display);
 		free(LANG);
+		free(RUNTIME_DIR);
 		exit(-1);
 	}
 

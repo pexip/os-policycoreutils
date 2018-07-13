@@ -1,3 +1,161 @@
+policycoreutils (2.6-3pexip1) pexip; urgency=medium
+
+  * Migrate to Stretch
+
+ -- John-Mark Bell <jmb@pexip.com>  Fri, 13 Jul 2018 12:12:19 +0100
+
+policycoreutils (2.6-3) unstable; urgency=medium
+
+  * Team upload.
+  * d/p/Handle-python-error-returns-correctly.patch: Fix a bug that was
+    preventing to override file contexts already defined in the policy
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 10 Jan 2017 00:56:57 +0100
+
+policycoreutils (2.6-2) unstable; urgency=medium
+
+  * Team upload.
+  * Upload to unstable
+
+ -- Laurent Bigonville <bigon@debian.org>  Mon, 28 Nov 2016 13:19:15 +0100
+
+policycoreutils (2.6-1) experimental; urgency=medium
+
+  * Team upload.
+  * New upstream release
+    - Drop d/p/Dont_use_subprocess_getstatusoutput_in_Python_2_code.patch,
+      d/p/sandbox-dbus-run-session.patch, d/p/CVE-2016-7545.patch,
+      d/p/sandbox-gobject-gtk.patch, applied upstream
+    - Refreshed the other patches
+    - debian/control: Bump {build-}dependencies to match the new release
+    - debian/control: Drop libapol-dev and libqpol-dev build-dependencies
+    - debian/python-sepolicy.install: Drop .so file, this is now a pure python
+      module.
+    - Install new restorecon_xattr executable and manpage
+  * debian/control: Drop libcgroup-dev build-dependency, no longer used
+  * debian/gbp.conf: Rename git-buildpackage section to buildpackage
+  * Switch to python3, disable system-config-selinux for now as it doesn't
+    support that version.
+  * d/p/policycoreutils-Use-new-sepolicy-icon-in-.desktop-fi.patch: Use new
+    icon for sepolicy (From upstream)
+  * d/p/Sandbox-Use-next-over-the-sepolicy.info-result.patch,
+    d/p/policycoreutils-Make-sepolicy-work-with-python3.patch,
+    d/p/policycoreutils-Use-GObject-introspection-binding-in.patch Add some
+    fixes for python3 (From upstream)
+  * debian/control: Add lsb-base dependency to please lintian
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 23 Nov 2016 01:15:04 +0100
+
+policycoreutils (2.5-3) unstable; urgency=medium
+
+  * Team upload.
+  * d/p/Dont_use_subprocess_getstatusoutput_in_Python_2_code.patch: Make the
+    python code of chcat and sandbox compatible with both python2 and python3
+  * debian/NEWS, debian/control: Fix a typo
+  * Merge Fedora changes to the selinux-autorelabel systemd scripts and units.
+    We now use a selinux-autorelabel.target and a generator that override the
+    default.target in case we need to relabel the filesystems.
+  * debian/patches/sandbox-dbus-run-session.patch: Use dbus-run-session
+    instead of dbus-launch when available (Closes: #836289)
+  * debian/patches/CVE-2016-7545.patch: create a new session for sandboxed
+    processes (Closes: #838599 CVE-2016-7545)
+  * debian/patches/sandbox-gobject-gtk.patch: Use GTK+ GObject introspection
+    bindings instead of old pygtk2 ones
+  * debian/patches/sandbox-x-window-manager.patch: Use system default window
+    manager instead of openbox
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 27 Sep 2016 22:30:28 +0200
+
+policycoreutils (2.5-2) unstable; urgency=medium
+
+  * Team upload.
+  * Remove the 'debian-' prefix from the selinux-autorelabel LSB script and
+    systemd services, not sure why I added it in the first place…
+
+ -- Laurent Bigonville <bigon@debian.org>  Fri, 13 May 2016 22:49:27 +0200
+
+policycoreutils (2.5-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream release
+    - Drop d/p/0001-legacy.patch, d/p/0016-open-init-pty: new open_init_pty
+      has been merged upstream
+    - debian/patches/0023-sepolicy-help-path.patch: Refreshed
+    - debian/control: Bump {build-}dependencies to match the new release
+    - Fix newrole to not drop capabilities from the bounding set. (Closes:
+      #813604)
+    - Fix crash when python-audit is not installed (Closes: #734806)
+  * debian/control: Bump Standards-Version to 3.9.8 (no further changes)
+  * debian/control: Update the Vcs-* URL's to please lintian (again)
+  * debian/NEWS: Remove duplicate word, thanks to lintian
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 26 Apr 2016 14:54:13 +0200
+
+policycoreutils (2.4-4) unstable; urgency=medium
+
+  * Team upload.
+  * Drop d/p/0009-find-does-not-have-a-context-switch.patch, findutils now
+    supports the -context switch, also be sure we have the correct version
+    installed.
+  * Create the /usr/sbin/load_policy symlink in the postinst script to support
+    the everything-in-usr directories scheme. (Closes: #767930)
+
+ -- Laurent Bigonville <bigon@debian.org>  Sun, 24 Jan 2016 12:12:53 +0100
+
+policycoreutils (2.4-3) unstable; urgency=medium
+
+  * Team upload.
+  * debian/gbp.conf: Sign tags by default
+  * debian/control: Drop python-setools dependency, this is not needed anymore
+  * debian/rules: Fix FTBFS when building arch-indep packages only (Closes:
+    #809122)
+  * debian/control: Bump libapol and libqpol build-dependencies to 3.3.8
+
+ -- Laurent Bigonville <bigon@debian.org>  Mon, 28 Dec 2015 14:34:35 +0100
+
+policycoreutils (2.4-2) unstable; urgency=medium
+
+  * Team upload.
+  * Upload to unstable
+
+ -- Laurent Bigonville <bigon@debian.org>  Thu, 19 Nov 2015 02:02:31 +0100
+
+policycoreutils (2.4-1) experimental; urgency=medium
+
+  * Team upload.
+  * New upstream release
+    - debian/control: Bump {build-}dependencies to match the new release
+    - debian/patches/*: Refresh the patches, drop 0018-sandbox-config.patch
+  * debian/watch: Update watch file URL
+  * debian/control: Bump Standards-Version to 3.9.6 (no further changes)
+  * Drop debian/policycoreutils.mcstrans.tmpfile: RuntimeDirectory has been
+    added in the mcstrans .service file
+  * Drop debian/patches/0017-no-sandbox: Let's build the sandbox tools even if
+    debian policy doesn't support it, could be useful with 3rd party ones.
+  * debian/control: Explicitly add dh-python to the build-dependencies
+  * debian/patches/0016-open-init-pty: Backport changes from upstream,
+    open_init_pty has finally been fixed upstream.
+  * Add LSB initscript/systemd service to relabed the filesystem when needed.
+    This remove the responsability of this task from selinux-basics package.
+    The idea and code is coming from Fedora.
+  * Create a new policycoreutils-gui package and install system-config-selinux
+  * Create a new policycoreutils-dev package to install the sepolgen and
+    semodules_* executables
+  * Create a new policycoreutils-sandbox package to install the scripts needed
+    to create graphical sandboxes
+  * Create a new policycoreutils-python-utils package to install semanage,
+    audit2why, audit2allow and chcat
+  * Install the HLL to CLI compiler in /usr/lib/selinux/hll
+  * Create a restorecond package ton install the restorecond daemon.
+  * Create a mcstrans package to install the mcstran daemon.
+  * Create a new newrole package to install newrole, run_init and
+    open_init_pty utilities
+  * Build newrole executable with the audit and namespace support
+  * Drop se_dpkg, this is not needed anymore, the policy should transition
+    dpkg to the correct context now.
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 19 Sep 2015 16:26:32 +0200
+
 policycoreutils (2.3-1pexip1) pexip; urgency=low
 
   * Migrate to Jessie
