@@ -2,3 +2,6 @@ rm_conffile /etc/default/sandbox 2.1.13-1~
 rm_conffile /etc/init.d/policycoreutils 2.1.0-3.1
 rm_conffile /etc/init.d/sandbox 2.1.13-1~
 mv_conffile /etc/init.d/debian-selinux-autorelabel /etc/init.d/selinux-autorelabel 2.5-2~
+rm_conffile /etc/pam.d/newrole 2.6-3pexip1~
+rm_conffile /etc/pam.d/run_init 2.6-3pexip1~
+rm_conffile /etc/init.d/mcstrans 2.6-3pexip1
