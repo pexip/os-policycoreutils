@@ -33,6 +33,12 @@ relabel_selinux() {
     fi
     rm -f  /.autorelabel
     [ -x /usr/lib/dracut/dracut-initramfs-restore ] && /usr/lib/dracut/dracut-initramfs-restore
+    if [ -x /usr/bin/grub-editenv ]; then
+	# Mark boot as clean
+	[ -s /boot/grub/grubenv ] || rm -f /boot/grub/grubenv
+	mkdir -p /boot/grub
+	/usr/bin/grub-editenv /boot/grub/grubenv unset recordfail
+    fi
     systemctl --force reboot
 }
 

@@ -1,3 +1,9 @@
+policycoreutils (2.6-3pexip2) pexip; urgency=medium
+
+  * Mark boot clean if autorelabel requested
+
+ -- John-Mark Bell <jmb@pexip.com>  Thu, 20 Sep 2018 16:34:23 +0100
+
 policycoreutils (2.6-3pexip1) pexip; urgency=medium
 
   * Migrate to Stretch
