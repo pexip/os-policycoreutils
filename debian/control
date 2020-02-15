@@ -30,7 +30,7 @@ Build-Depends: debhelper (>= 9),
                python3-sepolgen (>= 2.6)
 X-Python3-Version: >= 3.2
 Homepage: http://userspace.selinuxproject.org/
-XS-Pexip-Upstream: http://ftp.debian.org/debian/ stretch
+XS-Pexip-Upstream: http://ftp.debian.org/debian/ buster
 
 Package: policycoreutils
 Architecture: linux-any
