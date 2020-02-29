@@ -2,8 +2,8 @@ debian/local/selinux-autorelabel lib/systemd/
 debian/local/selinux-autorelabel-generator.sh lib/systemd/system-generators
 debian/local/selinux-autorelabel.target lib/systemd/system/
 etc/sestatus.conf
-sbin/fixfiles
-sbin/load_policy
+usr/sbin/fixfiles sbin/
+usr/sbin/load_policy sbin/
 sbin/restorecon
 sbin/restorecon_xattr
 sbin/setfiles

@@ -1,3 +1,42 @@
+policycoreutils (2.8-1) unstable; urgency=medium
+
+  * New upstream release
+    - debian/control: Bump {build-}dependencies to match the new release
+  * debian/control: Point Vcs-* fields to new (salsa) machine
+  * debian/rules: Adjust to match upstream changes to the build system
+  * debian/control: Bump Standards-Version to 4.1.4 (no further changes)
+  * debian/rules: Use dh_missing --fail-missing instead of dh_install
+  * debian/control: Bump the priority of the newrole package to optional,
+    priority extra is deprecated
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 29 May 2018 17:27:40 +0200
+
+policycoreutils (2.7-1) unstable; urgency=medium
+
+  * New upstream release
+    - debian/control: Bump {build-}dependencies to match the new release
+  * selinux-autorelabel: remove incorrect redirection to /dev/null
+  * debian/control: Remove Manoj from the uploader list and add myself
+    instead. Thanks to him for all the work in the past.
+  * Bump Standards-Version to 4.1.0 (no further changes)
+  * Bump debhelper compatibility to 10
+
+ -- Laurent Bigonville <bigon@debian.org>  Sun, 10 Sep 2017 10:30:25 +0200
+
+policycoreutils (2.7~rc3-1) experimental; urgency=medium
+
+  * Team upload.
+  * New upstream release candidate
+    - Drop all the patches, they are either merged upstream or not releavant
+      anymore since policycoreutils has been split in smaller components
+    - Drop all references to the packages that are not anymore built by this
+      source packages, this package builds policycoreutils and newrole packages
+    - debian/control: Bump {build-}dependencies to match the new release
+  * debian/watch: Add support for rc releases and use macros
+  * debian/control: Bump Standards-Version to 4.0.0 (no further changes)
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 24 Jun 2017 12:22:46 +0200
+
 policycoreutils (2.6-3pexip2) pexip; urgency=medium
 
   * Mark boot clean if autorelabel requested

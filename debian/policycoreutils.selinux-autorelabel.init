@@ -55,7 +55,7 @@ relabel_selinux_full() {
 	echo "*** system size and speed of hard drives."
 
 	FORCE=`cat /.autorelabel`
-	/sbin/fixfiles $FORCE restore > /dev/null 2>&1
+	/sbin/fixfiles $FORCE restore
     fi
     rm -f  /.autorelabel
     invoke-rc.d sendsigs stop > /dev/null 2>&1

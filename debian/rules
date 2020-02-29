@@ -5,15 +5,7 @@
 #export DH_VERBOSE=1
 
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
-export LIBDIR=$${DESTDIR}/usr/lib/${DEB_HOST_MULTIARCH}
-export PYTHON=python3
-export PYTHONLIBDIR=$${DESTDIR}/usr/lib/$(shell py3versions -d)
-export INITDIR=$${DESTDIR}/etc/init.d
-export SYSCONFDIR=$${DESTDIR}/etc/default
-export SYSTEMDDIR=$${DESTDIR}/lib/systemd
-export HLLDIR=$${DESTDIR}/usr/lib/selinux/hll
-#export SHLIBDIR=$${DESTDIR}/lib/${DEB_HOST_MULTIARCH}
-#export LIBBASE=lib/${DEB_HOST_MULTIARCH}
+export HLLDIR=/usr/lib/selinux/hll
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
@@ -27,17 +19,15 @@ export DEB_CFLAGS_MAINT_APPEND = $(shell $(dpkg_buildflags) --get CPPFLAGS)
 export LSPP_PRIV=y
 
 %:
-	dh $@ --with python3 --with systemd
+	dh $@
 
 override_dh_auto_install:
 	dh_auto_install --destdir=debian/tmp
 
-override_dh_install:
-	dh_install --list-missing
+override_dh_missing:
+	dh_missing --list-missing
 
 override_dh_installinit:
-	dh_installinit -pmcstrans
-	dh_installinit -prestorecond
 	dh_installinit --no-start --name=selinux-autorelabel
 # We don't have a -mark LSB initscript, so we don't need maintainer script for it (-n)
 	dh_installinit -n --name=selinux-autorelabel-mark
