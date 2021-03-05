@@ -1,22 +1,26 @@
 Source: policycoreutils
-VCS-Git: https://salsa.debian.org/selinux-team/policycoreutils.git
-VCS-Browser: https://salsa.debian.org/selinux-team/policycoreutils
+Vcs-Git: https://salsa.debian.org/selinux-team/policycoreutils.git
+Vcs-Browser: https://salsa.debian.org/selinux-team/policycoreutils
 Priority: optional
 Section: utils
 Maintainer: Debian SELinux maintainers <selinux-devel@lists.alioth.debian.org>
 Uploaders: Laurent Bigonville <bigon@debian.org>,
            Russell Coker <russell@coker.com.au>
-Standards-Version: 4.1.4
-Build-Depends: debhelper (>= 10),
+Standards-Version: 4.5.1
+Build-Depends: debhelper-compat (= 13),
                gawk,
                gettext,
                libaudit-dev,
                libcap-ng-dev,
                libpam0g-dev,
-               libselinux1-dev (>= 2.8),
-               libsemanage1-dev (>= 2.8),
-               libsepol1-dev (>= 2.8),
-Homepage: http://userspace.selinuxproject.org/
+               libselinux1-dev (>= 3.1),
+               libsemanage1-dev (>= 3.1),
+               libsepol1-dev (>= 3.1),
+Homepage: https://selinuxproject.org
+# The newrole executable is not installed SETUID in the package,
+# this is done in the postinst script if the capabilities cannot be set.
+# There is no need to have (fake)root during the build.
+Rules-Requires-Root: no
 
 Package: policycoreutils
 Architecture: linux-any

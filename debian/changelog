@@ -1,3 +1,79 @@
+policycoreutils (3.1-3) unstable; urgency=medium
+
+  * Remove needless quotes around $FORCE variable in
+    /lib/systemd/selinux-autorelabel to avoid shell error on empty file
+    Closes: #983447
+  * Add check for noautorelabel command line option to prevent relabeling
+    Closes: #922448
+  * Make fixfiles avoid trying to relabel tmpfs and other non-permanent
+    filesystems
+    Closes: #984567
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 05 Mar 2021 20:45:24 +1100
+
+policycoreutils (3.1-2) unstable; urgency=medium
+
+  [ Laurent Bigonville ]
+  * Add debian/gitlab-ci.yml file
+
+  [ Christian Göttsche ]
+  * d/local/selinux-autorelabel: Please shellcheck
+  * d/gitlab-ci.yml: Use Debian recipe
+  * d/control: Bump debhelper compat to level 13
+  * d/control: Bump Standards-Version to 4.5.1 (no further changes)
+  * d/control: update homepage
+  * d/rules: Enable -Wall -Wextra
+  * d/control: Convert cute fields
+  * d/policycoreutils.maintscript: Drop entry for ancient version
+  * d/patches: cherry-pick fixfiles: correctly restore context of mountpoints
+    (Closes: #976455)
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 10 Feb 2021 16:46:48 +0100
+
+policycoreutils (3.1-1) unstable; urgency=medium
+
+  [ Debian Janitor ]
+  * Wrap long lines in changelog entries: 1.30.26-2, 1.30-1, 1.28-1.
+  * Set debhelper-compat version in Build-Depends.
+  * Set upstream metadata fields: Bug-Database, Bug-Submit, Repository,
+    Repository-Browse.
+  * Update standards version to 4.5.0, no changes needed.
+
+  [ Laurent Bigonville ]
+  * New upstream release
+    - debian/control: Bump {build-}dependencies to match the new release
+  * debian/control: Set Rules-Requires-Root: no
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 15 Jul 2020 11:41:14 +0200
+
+policycoreutils (3.0-1) unstable; urgency=medium
+
+  * New upstream release
+    - debian/control: Bump {build-}dependencies to match the new release
+  * Switch to debhelper compat 12, stop overriding dh_missing
+  * debian/control: Bump Standards-Version to 4.4.1 (no further changes)
+  * debian/rules: Install the hll compiler in /usr/libexec now that the debian
+    policy allows it
+
+ -- Laurent Bigonville <bigon@debian.org>  Thu, 12 Dec 2019 14:40:41 +0100
+
+policycoreutils (2.9-2) unstable; urgency=medium
+
+  * Upload to unstable
+
+ -- Laurent Bigonville <bigon@debian.org>  Mon, 08 Jul 2019 09:30:38 +0200
+
+policycoreutils (2.9-1) experimental; urgency=medium
+
+  * New upstream release
+    - debian/control: Bump {build-}dependencies to match the new release
+  * debian/watch: Adjust the URL
+  * debian/control: Bump Standards-Version to 4.3.0 (no further changes)
+  * debian/newrole.install, debian/policycoreutils.install: Install manpages
+    in Russian
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 23 Mar 2019 15:31:16 +0100
+
 policycoreutils (2.8-1) unstable; urgency=medium
 
   * New upstream release
@@ -512,7 +588,7 @@ policycoreutils (2.0.74-1) unstable; urgency=low
     when installing a watch on utmp.
   * [863fb62]: topic--debian: Improve error messages on forkpty failure
     The current error message when forkpty() fails is not clear or
-    useful. The following patch makes indicate what went wrong. 
+    useful. The following patch makes indicate what went wrong.
     Bug fix: "The error message on forkpty() failure is not clear or
     useful.", thanks to Russell Coker              (Closes: #515710).
 
@@ -521,7 +597,7 @@ policycoreutils (2.0.74-1) unstable; urgency=low
 policycoreutils (2.0.72-4) UNRELEASED; urgency=low
 
   * [d42e245]: [topic--restorecond-init-script]: Add to watched files
-    list 
+    list
 
  -- Manoj Srivastava <srivasta@debian.org>  Mon, 14 Sep 2009 08:31:48 -0500
 
@@ -529,7 +605,7 @@ policycoreutils (2.0.72-3) UNRELEASED; urgency=low
 
   * [863fb62]: topic--debian: Improve error messages on forkpty failure
     The current error message when forkpty() fails is not clear or
-    useful. The following patch makes indicate what went wrong. 
+    useful. The following patch makes indicate what went wrong.
     Bug fix: "The error message on forkpty() failure is not clear or
     useful.", thanks to Russell Coker              (Closes: #515710).
 
@@ -1026,8 +1102,8 @@ policycoreutils (1.30.26-3) unstable; urgency=low
 
 policycoreutils (1.30.26-2) unstable; urgency=low
 
-  * Bug fix: "ImportError: No module named seobject", thanks to Erich
-    Schubert. Fix wrong directory the modules were installed in. (Closes: #383101).
+  * Bug fix: "ImportError: No module named seobject", thanks to Erich Schubert.
+    Fix wrong directory the modules were installed in. (Closes: #383101).
 
  -- Manoj Srivastava <srivasta@debian.org>  Tue, 15 Aug 2006 00:44:57 -0500
 
@@ -1116,7 +1192,8 @@ policycoreutils (1.30-1) unstable; urgency=low
 
   * New upstream release
       * Updated version for release.
-      * Merged German translations (de.po) by Debian translation team from Manoj Srivastava.
+      * Merged German translations (de.po) by Debian translation team from Manoj
+        Srivastava.
       * Merged audit2allow -R support, chcat fix, semanage MLS checks
         and semanage audit calls from Dan Walsh.
       * Merged semanage bug fix patch from Ivan Gyurdiev.
@@ -1262,8 +1339,10 @@ policycoreutils (1.28-1) unstable; urgency=low
     * Merged fixes for make DESTDIR= builds from Joshua Brindle.
     * Updated semodule_package for sepol interface changes.
     * Updated semodule_expand/link for sepol interface changes.
-    * Merged non-PAM Makefile support for newrole and run_init from Timothy Wood.
-    * Updated semodule_expand to use get interfaces for hidden sepol_module_package type.
+    * Merged non-PAM Makefile support for newrole and run_init from Timothy
+      Wood.
+    * Updated semodule_expand to use get interfaces for hidden
+      sepol_module_package type.
     * Merged newrole and run_init pam config patches from Dan Walsh (Red Hat).
     * Merged fixfiles patch from Dan Walsh (Red Hat).
     * Updated semodule for removal of semanage_strerror.

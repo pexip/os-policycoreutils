@@ -43,16 +43,15 @@ static __attribute__((__noreturn__)) void usage(const char *const name)
 {
 	if (iamrestorecon) {
 		fprintf(stderr,
-			"usage:  %s [-iIDFmnprRv0] [-e excludedir] pathname...\n"
-			"usage:  %s [-iIDFmnprRv0] [-e excludedir] -f filename\n",
+			"usage:  %s [-iIDFmnprRv0x] [-e excludedir] pathname...\n"
+			"usage:  %s [-iIDFmnprRv0x] [-e excludedir] -f filename\n",
 			name, name);
 	} else {
 		fprintf(stderr,
-			"usage:  %s [-diIDlmnpqvFW] [-e excludedir] [-r alt_root_path] spec_file pathname...\n"
-			"usage:  %s [-diIDlmnpqvFW] [-e excludedir] [-r alt_root_path] spec_file -f filename\n"
-			"usage:  %s -s [-diIDlmnpqvFW] spec_file\n"
-			"usage:  %s -c policyfile spec_file\n",
-			name, name, name, name);
+			"usage:  %s [-diIDlmnpqvEFW] [-e excludedir] [-r alt_root_path] [-c policyfile] spec_file pathname...\n"
+			"usage:  %s [-diIDlmnpqvEFW] [-e excludedir] [-r alt_root_path] [-c policyfile] spec_file -f filename\n"
+			"usage:  %s -s [-diIDlmnpqvFW] spec_file\n",
+			name, name, name);
 	}
 	exit(-1);
 }
@@ -168,8 +167,8 @@ int main(int argc, char **argv)
 	size_t buf_len;
 	const char *base;
 	int errors = 0;
-	const char *ropts = "e:f:hiIDlmno:pqrsvFRW0";
-	const char *sopts = "c:de:f:hiIDlmno:pqr:svFR:W0";
+	const char *ropts = "e:f:hiIDlmno:pqrsvFRW0x";
+	const char *sopts = "c:de:f:hiIDlmno:pqr:svEFR:W0";
 	const char *opts;
 	union selinux_callback cb;
 
@@ -313,6 +312,10 @@ int main(int argc, char **argv)
 			r_opts.syslog_changes =
 					   SELINUX_RESTORECON_SYSLOG_CHANGES;
 			break;
+		case 'E':
+			r_opts.conflict_error =
+					   SELINUX_RESTORECON_CONFLICT_ERROR;
+			break;
 		case 'F':
 			r_opts.set_specctx =
 					   SELINUX_RESTORECON_SET_SPECFILE_CTX;
@@ -382,6 +385,13 @@ int main(int argc, char **argv)
 		case '0':
 			null_terminated = 1;
 			break;
+                case 'x':
+                        if (iamrestorecon) {
+				r_opts.xdev = SELINUX_RESTORECON_XDEV;
+                        } else {
+				usage(argv[0]);
+                        }
+                        break;
 		case 'h':
 		case '?':
 			usage(argv[0]);
@@ -398,7 +408,7 @@ int main(int argc, char **argv)
 
 	if (!iamrestorecon) {
 		if (policyfile) {
-			if (optind != (argc - 1))
+			if (optind > (argc - 1))
 				usage(argv[0]);
 		} else if (use_input_file) {
 			if (optind != (argc - 1)) {

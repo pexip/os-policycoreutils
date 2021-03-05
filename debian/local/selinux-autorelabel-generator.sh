@@ -21,6 +21,9 @@ set_target ()
 }
 
 if selinuxenabled; then
+    if grep -sqE "\bnoautorelabel\b" /proc/cmdline; then
+        exit 0
+    fi
     if test -f /.autorelabel; then
         set_target
     elif grep -sqE "\bautorelabel\b" /proc/cmdline; then

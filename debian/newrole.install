@@ -4,3 +4,6 @@ usr/sbin/run_init
 usr/share/man/man1/newrole.1
 usr/share/man/man8/open_init_pty.8
 usr/share/man/man8/run_init.8
+usr/share/man/ru/man1/newrole.1
+usr/share/man/ru/man8/open_init_pty.8
+usr/share/man/ru/man8/run_init.8
