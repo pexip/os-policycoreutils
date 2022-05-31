@@ -12,6 +12,7 @@ setfiles \- set SELinux file security contexts.
 .RB [ \-n ]
 .RB [ \-e
 .IR directory ]
+.RB [ \-E ]
 .RB [ \-p ]
 .RB [ \-s ]
 .RB [ \-v ]
@@ -62,6 +63,10 @@ after ABORT_ON_ERRORS errors).
 .BI \-e \ directory
 directory to exclude (repeat option for more than one directory).
 .TP
+.BI \-E
+treat conflicting specifications as errors, such as where two hardlinks for
+the same inode have different contexts.
+.TP
 .BI \-f \ infilename
 .I infilename
 contains a list of files to be processed. Use
@@ -90,7 +95,7 @@ section for further details.
 .B \-D
 Set or update any directory SHA1 digests. Use this option to
 enable usage of the
-.IR security.restorecon_last
+.IR security.sehash
 extended attribute.
 .TP
 .B \-l
@@ -209,7 +214,8 @@ option is used.
 .SH "NOTES"
 .IP "1." 4
 .B setfiles
-follows symbolic links and operates recursively on directories.
+operates recursively on directories. Paths leading up the final
+component of the file(s) are not canonicalized before labeling.
 .IP "2." 4
 If the
 .I pathname
@@ -228,10 +234,10 @@ option to
 will cause it to store a SHA1 digest of the
 .B spec_file
 set in an extended attribute named
-.IR security.restorecon_last
-on the directory specified in each
+.IR security.sehash
+on each directory specified in
 .IR pathname \ ...
-once the relabeling has been completed successfully. This digest will be
+once the relabeling has been completed successfully. These digests will be
 checked should
 .B setfiles
 .B \-D
@@ -250,7 +256,7 @@ option will ignore the SHA1 digest from each directory specified in
 .IR pathname \ ...
 and provided the
 .B \-n
-option is NOT set, files will be relabeled as required with the digest then
+option is NOT set, files will be relabeled as required with the digests then
 being updated provided there are no errors.
 
 .SH "AUTHOR"

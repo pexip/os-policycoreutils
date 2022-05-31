@@ -18,7 +18,7 @@
 #include <errno.h>
 
 int permanent = 0;
-int reload = 1;
+int no_reload = 0;
 int verbose = 0;
 
 int setbool(char **list, size_t start, size_t end);
@@ -38,11 +38,6 @@ int main(int argc, char **argv)
 	if (argc < 2)
 		usage();
 
-	if (is_selinux_enabled() <= 0) {
-		fputs("setsebool:  SELinux is disabled.\n", stderr);
-		return 1;
-	}
-
 	while (1) {
 		clflag = getopt(argc, argv, "PNV");
 		if (clflag == -1)
@@ -53,7 +48,7 @@ int main(int argc, char **argv)
 			permanent = 1;
 			break;
 		case 'N':
-			reload = 0;
+			no_reload = 1;
 			break;
 		case 'V':
 			verbose = 1;
@@ -82,7 +77,7 @@ int main(int argc, char **argv)
 		/* Add 1 for the '=' */
 		len = strlen(argv[optind]) + strlen(argv[optind + 1]) + 2;
 		bool_list[0] = (char *)malloc(len);
-		if (bool_list[0] == 0) {
+		if (bool_list[0] == NULL) {
 			fputs("Out of memory - aborting\n", stderr);
 			return 1;
 		}
@@ -130,6 +125,7 @@ static int semanage_set_boolean_list(size_t boolcnt,
 	semanage_bool_key_t *bool_key = NULL;
 	int managed;
 	int result;
+	int enabled = is_selinux_enabled();
 
 	handle = semanage_handle_create();
 	if (handle == NULL) {
@@ -137,8 +133,8 @@ static int semanage_set_boolean_list(size_t boolcnt,
 		goto err;
 	}
 
-	if (! verbose) {
-		semanage_msg_set_callback(handle,NULL, NULL);
+	if (!verbose) {
+		semanage_msg_set_callback(handle, NULL, NULL);
 	}
 
 	managed = semanage_is_managed(handle);
@@ -179,9 +175,9 @@ static int semanage_set_boolean_list(size_t boolcnt,
 			goto err;
 
 		semanage_bool_exists(handle, bool_key, &result);
-		if ( !result ) {
+		if (!result) {
 			semanage_bool_exists_local(handle, bool_key, &result);
-			if ( !result ) {
+			if (!result) {
 				fprintf(stderr, "Boolean %s is not defined\n", boollist[j].name);
 				goto err;
 			}
@@ -191,7 +187,7 @@ static int semanage_set_boolean_list(size_t boolcnt,
 						  boolean) < 0)
 			goto err;
 
-		if (semanage_bool_set_active(handle, bool_key, boolean) < 0) {
+		if (enabled && semanage_bool_set_active(handle, bool_key, boolean) < 0) {
 			fprintf(stderr, "Failed to change boolean %s: %m\n",
 				boollist[j].name);
 			goto err;
@@ -202,9 +198,12 @@ static int semanage_set_boolean_list(size_t boolcnt,
 		boolean = NULL;
 	}
 
-	semanage_set_reload(handle, reload);
-	if (semanage_commit(handle) < 0)
+	if (no_reload)
+		semanage_set_reload(handle, 0);
+	if (semanage_commit(handle) < 0) {
+		fprintf(stderr, "Failed to commit changes to booleans: %m\n");
 		goto err;
+	}
 
 	semanage_disconnect(handle);
 	semanage_handle_destroy(handle);
@@ -233,13 +232,13 @@ int setbool(char **list, size_t start, size_t end)
 	while (i < end) {
 		name = list[i];
 		value_ptr = strchr(list[i], '=');
-		if (value_ptr == 0) {
+		if (value_ptr == NULL) {
 			fprintf(stderr,
 				"setsebool: '=' not found in boolean expression %s\n",
 				list[i]);
 			goto err;
 		}
-		*value_ptr = 0;
+		*value_ptr = '\0';
 		value_ptr++;
 		if (strcmp(value_ptr, "1") == 0 ||
 		    strcasecmp(value_ptr, "true") == 0 ||
@@ -281,7 +280,7 @@ int setbool(char **list, size_t start, size_t end)
 	while (i < end) {
 		name = list[i];
 		value_ptr = strchr(name, '=');
-		*value_ptr = 0;
+		*value_ptr = '\0';
 		value_ptr++;
 		if (pwd && pwd->pw_name)
 			syslog(LOG_NOTICE,
