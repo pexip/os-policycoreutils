@@ -18,7 +18,7 @@ Build-Depends: debhelper (>= 10),
                libsemanage1-dev (>= 2.8),
                libsepol1-dev (>= 2.8),
 Homepage: http://userspace.selinuxproject.org/
-XS-Pexip-Upstream: http://ftp.debian.org/debian/ buster
+XS-Pexip-Upstream: http://deb.debian.org/debian/ bullseye
 
 Package: policycoreutils
 Architecture: linux-any
