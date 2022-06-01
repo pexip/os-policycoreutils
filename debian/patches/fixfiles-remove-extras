@@ -1,0 +1,13 @@
+Index: policycoreutils-3.1/scripts/fixfiles
+===================================================================
+--- policycoreutils-3.1.orig/scripts/fixfiles
++++ policycoreutils-3.1/scripts/fixfiles
+@@ -45,7 +45,7 @@ FS="`cat /proc/self/mounts | sort | uniq
+ for i in $FS; do
+ 	if [ `useseclabel` -ge 0 ]
+ 	then
+-		grep " $i " /proc/self/mounts | awk '{print $4}' | egrep --silent '(^|,)seclabel(,|$)' && echo $i
++		grep " $i " /proc/self/mounts | egrep -v "(tmpfs)|( /sys)|(^devpts)|(^hugetlbfs)|(^mqueue)" | awk '{print $4}' | egrep --silent '(^|,)seclabel(,|$)' && echo $i
+ 	else
+ 		grep " $i " /proc/self/mounts | grep -v "context=" | egrep --silent '(ext[234]| ext4dev | gfs2 | xfs | jfs | btrfs )' && echo $i
+ 	fi

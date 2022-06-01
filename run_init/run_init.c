@@ -159,6 +159,14 @@ int authenticate_via_pam(const struct passwd *p_passwd_line)
 #include <shadow.h>		/* for shadow passwd functions */
 #include <string.h>		/* for strlen(), memset() */
 
+/*
+ * crypt() may not be defined in unistd.h; see:
+ *   http://man7.org/linux/man-pages/man3/crypt.3.html#NOTES
+ */
+#if !defined(_XOPEN_CRYPT) || _XOPEN_CRYPT == -1
+#include <crypt.h>
+#endif
+
 #define PASSWORD_PROMPT _("Password:")	/* prompt for getpass() */
 
 int authenticate_via_shadow_passwd(const struct passwd *);
@@ -295,7 +303,7 @@ int authenticate_user(void)
  * out:		The CONTEXT associated with the context.
  * return:	0 on success, -1 on failure.
  */
-int get_init_context(security_context_t * context)
+int get_init_context(char **context)
 {
 
 	FILE *fp;
@@ -346,7 +354,7 @@ int main(int argc, char *argv[])
 
 	extern char *optarg;	/* used by getopt() for arg strings */
 	extern int opterr;	/* controls getopt() error messages */
-	security_context_t new_context;	/* context for the init script context  */
+	char *new_context;	/* context for the init script context  */
 
 #ifdef USE_NLS
 	setlocale(LC_ALL, "");

@@ -5,15 +5,15 @@
 #export DH_VERBOSE=1
 
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
-export HLLDIR=/usr/lib/selinux/hll
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 # The build system doesn't use CPPFLAGS, pass them to CFLAGS to enable the
 # missing (hardening) flags. dpkg_buildflags is necessary because $(shell ..)
-# doesn't use local environment variables.
+# doesn't use local environment variables. Also enable Wall and Wextra to spot
+# basic irregularities.
 dpkg_buildflags = DEB_BUILD_MAINT_OPTIONS=$(DEB_BUILD_MAINT_OPTIONS) dpkg-buildflags
-export DEB_CFLAGS_MAINT_APPEND = $(shell $(dpkg_buildflags) --get CPPFLAGS)
+export DEB_CFLAGS_MAINT_APPEND = $(shell $(dpkg_buildflags) --get CPPFLAGS) -Wall -Wextra
 
 # Build newrole executable with the audit and namespace support
 export LSPP_PRIV=y
@@ -24,13 +24,15 @@ export LSPP_PRIV=y
 override_dh_auto_install:
 	dh_auto_install --destdir=debian/tmp
 
-override_dh_missing:
-	dh_missing --list-missing
-
 override_dh_installinit:
-	dh_installinit --no-start --name=selinux-autorelabel
-# We don't have a -mark LSB initscript, so we don't need maintainer script for it (-n)
-	dh_installinit -n --name=selinux-autorelabel-mark
+	dh_installinit -ppolicycoreutils --no-start --name=selinux-autorelabel
+
+override_dh_installsystemd:
+	dh_installsystemd -ppolicycoreutils --no-start --no-restart-after-upgrade --name=selinux-autorelabel
+# selinux-autorelabel-mark.service functionality is included in the LSB
+# selinux-autorelabel script, that's why there is no conterpart in the LSB
+# world
+	dh_installsystemd -ppolicycoreutils --no-start --no-restart-after-upgrade --name=selinux-autorelabel-mark
 
 override_dh_installpam:
 	dh_installpam -pnewrole --name=newrole
