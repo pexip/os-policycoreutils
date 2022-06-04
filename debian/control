@@ -6,16 +6,16 @@ Section: utils
 Maintainer: Debian SELinux maintainers <selinux-devel@lists.alioth.debian.org>
 Uploaders: Laurent Bigonville <bigon@debian.org>,
            Russell Coker <russell@coker.com.au>
-Standards-Version: 4.5.1
+Standards-Version: 4.6.0
 Build-Depends: debhelper-compat (= 13),
                gawk,
                gettext,
                libaudit-dev,
                libcap-ng-dev,
                libpam0g-dev,
-               libselinux1-dev (>= 3.1),
-               libsemanage1-dev (>= 3.1),
-               libsepol1-dev (>= 3.1),
+               libselinux1-dev (>= 3.4),
+               libsemanage-dev (>= 3.4),
+               libsepol-dev (>= 3.4),
 Homepage: https://selinuxproject.org
 # The newrole executable is not installed SETUID in the package,
 # this is done in the postinst script if the capabilities cannot be set.
@@ -25,7 +25,6 @@ Rules-Requires-Root: no
 Package: policycoreutils
 Architecture: linux-any
 Depends: lsb-base (>= 3.0-6), selinux-utils, ${misc:Depends}, ${shlibs:Depends}
-Breaks: selinux-basics (<< 0.5.3~), findutils (<< 4.5.7)
 Pre-Depends: ${misc:Pre-Depends}
 Description: SELinux core policy utilities
  Security-enhanced Linux is a patch of the Linux® kernel and a number
@@ -48,8 +47,6 @@ Depends: libcap2-bin,
          policycoreutils (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
-Breaks: policycoreutils (<< 2.4)
-Replaces: policycoreutils (<< 2.4)
 Description: SELinux core policy utilities (newrole application for RBAC/MLS)
  Security-enhanced Linux is a patch of the Linux® kernel and a number
  of utilities with enhanced security functionality designed to add
