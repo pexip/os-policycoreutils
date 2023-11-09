@@ -22,7 +22,7 @@ Homepage: https://selinuxproject.org
 # this is done in the postinst script if the capabilities cannot be set.
 # There is no need to have (fake)root during the build.
 Rules-Requires-Root: no
-XS-Pexip-Upstream: http://deb.debian.org/debian/ bullseye
+XS-Pexip-Upstream: http://deb.debian.org/debian/ bookworm
 
 Package: policycoreutils
 Architecture: linux-any
