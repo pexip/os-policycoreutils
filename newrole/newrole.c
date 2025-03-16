@@ -229,16 +229,13 @@ static int free_hashtab_entry(hashtab_key_t key, hashtab_datum_t d,
 
 static unsigned int reqsymhash(hashtab_t h, const_hashtab_key_t key)
 {
-	const char *p;
-	size_t size;
-	unsigned int val;
+	unsigned int hash = 5381;
+	unsigned char c;
 
-	val = 0;
-	size = strlen(key);
-	for (p = key; ((size_t) (p - key)) < size; p++)
-		val =
-		    (val << 4 | (val >> (8 * sizeof(unsigned int) - 4))) ^ (*p);
-	return val & (h->size - 1);
+	while ((c = *(unsigned const char *)key++))
+		hash = ((hash << 5) + hash) ^ c;
+
+	return hash & (h->size - 1);
 }
 
 static int reqsymcmp(hashtab_t h
@@ -842,7 +839,7 @@ static int parse_command_line_arguments(int argc, char **argv, char *ttyn,
 	char *type_ptr = NULL;	/* stores malloc'd data from get_default_type */
 	char *level_s = NULL;	/* level spec'd by user in argv[] */
 	char *range_ptr = NULL;
-	char *new_con = NULL;
+	const char *new_con = NULL;
 	char *tty_con = NULL;
 	context_t context = NULL;	/* manipulatable form of new_context */
 	const struct option long_options[] = {
@@ -1289,7 +1286,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Step 5:  Execute a new shell with the new context in `new_context'. 
 	 *
-	 * Establish context, namesapce and any options for the new shell
+	 * Establish context, namespace and any options for the new shell
 	 */
 	if (optind < 1)
 		optind = 1;

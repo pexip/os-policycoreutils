@@ -1,3 +1,56 @@
+policycoreutils (3.8.1-1) unstable; urgency=medium
+
+  * New upstream release, just version change
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 16 Mar 2025 19:41:42 +1100
+
+policycoreutils (3.8-1) unstable; urgency=medium
+
+  * New upstream release, adds unsetfiles to remove labels
+
+ -- Russell Coker <russell@coker.com.au>  Thu, 06 Feb 2025 23:16:42 +1100
+
+policycoreutils (3.7-2) unstable; urgency=medium
+
+  * Put back the 3.5-2 and 3.5-2.1 that were accidentally dropped
+    Closes: #1073623
+  * Don't have second linked copy of sestatus Closes: #1064804
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 01 Sep 2024 17:37:30 +1000
+
+policycoreutils (3.7-1) unstable; urgency=medium
+
+  * New upstream release
+  * Added new upstream signing key
+  * Removed config for Russian man pages
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 30 Aug 2024 13:38:54 +1000
+
+policycoreutils (3.5-2.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Move aliased files from / to /usr (DEP17). Closes: #1073623
+
+ -- Michael Biebl <biebl@debian.org>  Thu, 15 Aug 2024 09:00:46 +0200
+
+policycoreutils (3.5-2) unstable; urgency=medium
+
+  * Made fixfiles default to -T0 (threads=cores) Closes: #1042756
+  * Added /usr/libexec/selinux/remove-leaf-dirs for use by policy packages
+
+ -- Russell Coker <russell@coker.com.au>  Thu, 24 Aug 2023 22:26:45 +1000
+
+policycoreutils (3.5-1) unstable; urgency=medium
+
+  * New upstream release
+    - debian/control: Bump build-dependencies to match the new release
+  * debian/upstream/signing-key.asc: Add public key of Jason Zaman
+  * debian/control: Bump Standards-Version to 4.6.2 (no further changes)
+  * debian/control: Drop lsb-base from the dependencies, to please lintian
+  * debian/policycoreutils.lintian-overrides: Fix override
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 11 Jul 2023 08:02:41 +0200
+
 policycoreutils (3.4-1) unstable; urgency=medium
 
   [ Christian Göttsche ]

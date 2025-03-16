@@ -1,22 +1,24 @@
-debian/local/selinux-autorelabel lib/systemd/
-debian/local/selinux-autorelabel-generator.sh lib/systemd/system-generators
+debian/local/selinux-autorelabel usr/lib/systemd/
+debian/local/selinux-autorelabel-generator.sh usr/lib/systemd/system-generators
+debian/remove-leaf-dirs usr/libexec/selinux/
 etc/sestatus.conf
-usr/sbin/fixfiles sbin/
-usr/sbin/load_policy sbin/
-sbin/restorecon
-sbin/restorecon_xattr
-sbin/setfiles
 usr/bin/secon
 usr/bin/sestatus
 usr/libexec/selinux/hll
+usr/sbin/fixfiles
 usr/sbin/genhomedircon
 usr/sbin/genhomedircon
+usr/sbin/load_policy
+usr/sbin/restorecon
+usr/sbin/restorecon_xattr
 usr/sbin/semodule
-usr/sbin/sestatus
+usr/sbin/setfiles
 usr/sbin/setsebool
+usr/sbin/unsetfiles
 usr/share/bash-completion/completions/setsebool
 usr/share/locale/
 usr/share/man/man1/secon.1
+usr/share/man/man1/unsetfiles.1
 usr/share/man/man5/selinux_config.5
 usr/share/man/man5/sestatus.conf.5
 usr/share/man/man8/fixfiles.8
@@ -28,15 +30,3 @@ usr/share/man/man8/semodule.8
 usr/share/man/man8/sestatus.8
 usr/share/man/man8/setfiles.8
 usr/share/man/man8/setsebool.8
-usr/share/man/ru/man1/secon.1
-usr/share/man/ru/man5/selinux_config.5
-usr/share/man/ru/man5/sestatus.conf.5
-usr/share/man/ru/man8/fixfiles.8
-usr/share/man/ru/man8/genhomedircon.8
-usr/share/man/ru/man8/load_policy.8
-usr/share/man/ru/man8/restorecon.8
-usr/share/man/ru/man8/restorecon_xattr.8
-usr/share/man/ru/man8/semodule.8
-usr/share/man/ru/man8/sestatus.8
-usr/share/man/ru/man8/setfiles.8
-usr/share/man/ru/man8/setsebool.8

@@ -18,6 +18,9 @@ export DEB_CFLAGS_MAINT_APPEND = $(shell $(dpkg_buildflags) --get CPPFLAGS) -Wal
 # Build newrole executable with the audit and namespace support
 export LSPP_PRIV=y
 
+# Install all binaries into /usr
+export SBINDIR=/usr/sbin
+
 %:
 	dh $@
 
