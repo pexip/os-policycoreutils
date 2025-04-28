@@ -1,2 +1,2 @@
-lib/systemd/system/selinux-autorelabel-mark.service lib/systemd/system/basic.target.wants/selinux-autorelabel-mark.service
+usr/lib/systemd/system/selinux-autorelabel-mark.service usr/lib/systemd/system/basic.target.wants/selinux-autorelabel-mark.service
 usr/share/bash-completion/completions/setsebool usr/share/bash-completion/completions/getsebool

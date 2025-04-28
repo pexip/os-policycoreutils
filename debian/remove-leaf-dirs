@@ -1,0 +1,29 @@
+#!/usr/bin/perl
+use strict;
+
+# Takes directories on stdin and puts a list on stdout where any directory
+# that has another directory as it's stem is removed
+# so if you have /a/b and /a/b/c then /a/b/c is removed
+
+my @arr;
+
+while(<STDIN>)
+{
+  chomp;
+  push(@arr, $_);
+}
+my @sorted = sort { length($a) <=> length($b) } @arr;
+
+for(my $i = 0; $i < $#sorted; $i++)
+{
+  print "$sorted[$i]\n";
+  for(my $j = $i + 1; $j <= $#sorted; $j++)
+  {
+    if($sorted[$i] . "/" eq substr($sorted[$j], 0, length($sorted[$i])+1))
+    {
+      splice(@sorted, $j, 1);
+      $j--;
+    }
+  }
+}
+print "$sorted[$#sorted]\n";

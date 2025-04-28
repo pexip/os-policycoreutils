@@ -7,7 +7,7 @@ Before=shutdown.target
 ConditionSecurity=selinux
 
 [Service]
-ExecStart=/lib/systemd/selinux-autorelabel
+ExecStart=/usr/lib/systemd/selinux-autorelabel
 Type=oneshot
 TimeoutSec=0
 RemainAfterExit=yes

@@ -1,0 +1,13 @@
+Index: policycoreutils-3.5/scripts/fixfiles
+===================================================================
+--- policycoreutils-3.5.orig/scripts/fixfiles
++++ policycoreutils-3.5/scripts/fixfiles
+@@ -109,7 +109,7 @@ fullFlag=0
+ BOOTTIME=""
+ VERBOSE="-p"
+ FORCEFLAG=""
+-THREADS=""
++THREADS="-T0"
+ RPMFILES=""
+ PREFC=""
+ RESTORE_MODE=""
