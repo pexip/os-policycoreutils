@@ -1,3 +1,10 @@
+policycoreutils (3.8.1-2) unstable; urgency=medium
+
+  * Fixed remove-leaf-dirs, the previous code was badly broken and only
+    worked in trivial test cases.  Needed for a clean upgrade to Trixie.
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 08 Aug 2025 00:48:14 +1000
+
 policycoreutils (3.8.1-1+pexip25u1) pexip-trixie; urgency=medium
 
   * Initial trixie build
